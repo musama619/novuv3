@@ -372,6 +372,14 @@ export const bulkSmsConfig: IConfigCredential[] = [
     type: 'string',
     required: true,
   },
+  {
+    key: CredentialsKeyEnum.From,
+    displayName: 'Sender ID',
+    description:
+      'Sender Id is used for from field in the request. If not provided, from field will not be sent in the request',
+    type: 'string',
+    required: false,
+  },
 ];
 
 export const iSendSmsConfig: IConfigCredential[] = [
@@ -566,7 +574,7 @@ export const fcmConfig: IConfigCredential[] = [
         if (!value || value.trim() === '') {
           return true; // Let required validation handle empty values
         }
-        
+
         try {
           JSON.parse(value);
 
