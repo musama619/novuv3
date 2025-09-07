@@ -103,11 +103,6 @@ export class AddJob {
     }
 
     Logger.log(`Scheduling New Job ${job._id} of type: ${job.type}`, LOG_CONTEXT);
-
-    const result = isJobDeferredType(job.type)
-      ? await this.executeDeferredJob(command)
-      : await this.executeNoneDeferredJob(command);
-
     await this.createExecutionDetails.execute(
       CreateExecutionDetailsCommand.create({
         ...CreateExecutionDetailsCommand.getDetailsFromJob(job),
@@ -118,6 +113,10 @@ export class AddJob {
         isRetry: false,
       })
     );
+
+    const result = isJobDeferredType(job.type)
+      ? await this.executeDeferredJob(command)
+      : await this.executeNoneDeferredJob(command);
 
     return result;
   }
@@ -200,7 +199,6 @@ export class AddJob {
         return {
           workflowStatus: WorkflowRunStatusEnum.COMPLETED,
           deliveryLifecycleStatus: DeliveryLifecycleStatus.SKIPPED,
-          stepStatus: JobStatusEnum.SKIPPED,
         };
       }
     }
@@ -511,7 +509,7 @@ export class AddJob {
     command: AddJobCommand,
     job: JobEntity,
     bridgeResponse: ExecuteOutput | null
-  ): Promise<{ shouldSkip: boolean }> {
+  ): Promise<{ shouldSkip: boolean; executionCount?: number; threshold?: number; windowStart?: string }> {
     // Get throttle configuration from bridge response or job step
     const throttleConfig = bridgeResponse?.outputs || {};
     const { window, unit, threshold = 1 } = throttleConfig;
@@ -570,7 +568,7 @@ export class AddJob {
       });
     }
 
-    return { shouldSkip };
+    return { shouldSkip, executionCount, threshold: threshold as number, windowStart: windowStart.toISOString() };
   }
 
   private convertToMilliseconds(amount: number, unit: string): number {

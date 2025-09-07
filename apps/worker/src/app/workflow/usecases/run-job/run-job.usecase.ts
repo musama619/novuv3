@@ -280,6 +280,7 @@ export class RunJob {
         });
 
         if (addJobResult.stepStatus === JobStatusEnum.SKIPPED) {
+          console.log('IM SKIPPING JOB', { addJobResult });
           await this.jobRepository.updateOne(
             {
               _id: nextJob._id,
