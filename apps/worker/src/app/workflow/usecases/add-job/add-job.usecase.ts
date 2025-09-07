@@ -195,6 +195,8 @@ export class AddJob {
       const throttleResult = await this.handleThrottle(command, job, bridgeResponse);
 
       if (throttleResult.shouldSkip) {
+        await this.handleThrottleSkip(command, job);
+
         return {
           workflowStatus: WorkflowRunStatusEnum.COMPLETED,
           deliveryLifecycleStatus: DeliveryLifecycleStatus.SKIPPED,
@@ -598,6 +600,25 @@ export class AddJob {
   }
 
   private async handleDigestSkip(command: AddJobCommand, job) {
+    const nextJobToSchedule = await this.jobRepository.findOne({
+      _environmentId: command.environmentId,
+      _parentId: job._id,
+    });
+
+    if (!nextJobToSchedule) {
+      return;
+    }
+
+    await this.execute({
+      userId: job._userId,
+      environmentId: job._environmentId,
+      organizationId: command.organizationId,
+      jobId: nextJobToSchedule._id,
+      job: nextJobToSchedule,
+    });
+  }
+
+  private async handleThrottleSkip(command: AddJobCommand, job: JobEntity) {
     const nextJobToSchedule = await this.jobRepository.findOne({
       _environmentId: command.environmentId,
       _parentId: job._id,
