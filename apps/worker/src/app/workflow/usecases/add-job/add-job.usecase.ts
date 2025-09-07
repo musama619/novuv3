@@ -195,11 +195,12 @@ export class AddJob {
       const throttleResult = await this.handleThrottle(command, job, bridgeResponse);
 
       if (throttleResult.shouldSkip) {
-        await this.handleThrottleSkip(command, job);
+        await this.handleThrottleSkip(command, job, throttleResult);
 
         return {
           workflowStatus: WorkflowRunStatusEnum.COMPLETED,
           deliveryLifecycleStatus: DeliveryLifecycleStatus.SKIPPED,
+          stepStatus: JobStatusEnum.SKIPPED,
         };
       }
     }
@@ -622,10 +623,11 @@ export class AddJob {
     });
   }
 
-  private async handleThrottleSkip(_command: AddJobCommand, job: JobEntity) {
+  private async handleThrottleSkip(_command: AddJobCommand, job: JobEntity, throttleResult: { shouldSkip: boolean }) {
     this.jobRepository.update(
       {
         _environmentId: job._environmentId,
+        _id: job._id,
       },
       {
         $set: {
@@ -647,20 +649,17 @@ export class AddJob {
         status: JobStatusEnum.SKIPPED,
       });
 
-      // Create execution details for each skipped job
-      for (const childJob of childJobsUpdated) {
-        await this.createExecutionDetails.execute(
-          CreateExecutionDetailsCommand.create({
-            ...CreateExecutionDetailsCommand.getDetailsFromJob(childJob),
-            detail: DetailEnum.SKIPPED_STEP_BY_CONDITIONS,
-            source: ExecutionDetailsSourceEnum.INTERNAL,
-            status: ExecutionDetailsStatusEnum.SUCCESS,
-            isTest: false,
-            isRetry: false,
-            raw: JSON.stringify({ reason: 'throttled_parent_step' }),
-          })
-        );
-      }
+      await this.createExecutionDetails.execute(
+        CreateExecutionDetailsCommand.create({
+          ...CreateExecutionDetailsCommand.getDetailsFromJob(job),
+          detail: DetailEnum.THROTTLE_LIMIT_EXCEEDED,
+          source: ExecutionDetailsSourceEnum.INTERNAL,
+          status: ExecutionDetailsStatusEnum.SUCCESS,
+          isTest: false,
+          isRetry: false,
+          raw: JSON.stringify({ ...throttleResult }),
+        })
+      );
     }
   }
 
@@ -673,7 +672,6 @@ export class AddJob {
   }
 
   public async queueJob(job: JobEntity, delay: number) {
-    Logger.verbose(`Adding Job ${job._id} to Queue`, LOG_CONTEXT);
     const stepContainsWebhookFilter = this.stepContainsFilter(job, 'webhook');
     const options: JobsOptions = {
       delay,
