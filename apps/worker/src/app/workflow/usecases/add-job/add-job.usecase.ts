@@ -229,12 +229,9 @@ export class AddJob {
       throw new Error('Defer duration limit exceeded');
     }
 
-    console.log('QUEUING JOB NOW!');
     await this.stepRunRepository.create(command.job, {
       status: JobStatusEnum.DELAYED,
     });
-
-    console.log('POST QUEUE JOB NOW!');
 
     await this.queueJob(job, delay);
 
@@ -283,6 +280,13 @@ export class AddJob {
 
   private async executeNoneDeferredJob(command: AddJobCommand): Promise<AddJobResult> {
     const { job } = command;
+
+    if (job.status === JobStatusEnum.SKIPPED) {
+      return {
+        workflowStatus: null,
+        deliveryLifecycleStatus: null,
+      };
+    }
 
     Logger.verbose(`Updating status to queued for job ${job._id}`, LOG_CONTEXT);
     await this.jobRepository.updateStatus(command.environmentId, job._id, JobStatusEnum.QUEUED);
@@ -618,23 +622,46 @@ export class AddJob {
     });
   }
 
-  private async handleThrottleSkip(command: AddJobCommand, job: JobEntity) {
-    const nextJobToSchedule = await this.jobRepository.findOne({
-      _environmentId: command.environmentId,
-      _parentId: job._id,
-    });
+  private async handleThrottleSkip(_command: AddJobCommand, job: JobEntity) {
+    this.jobRepository.update(
+      {
+        _environmentId: job._environmentId,
+      },
+      {
+        $set: {
+          status: JobStatusEnum.SKIPPED,
+        },
+      }
+    );
 
-    if (!nextJobToSchedule) {
-      return;
+    // Skip all subsequent jobs in the workflow chain
+    const childJobsUpdated = await this.jobRepository.updateAllChildJobStatus(
+      job,
+      JobStatusEnum.SKIPPED,
+      job._id // Use the throttled job's ID as reference
+    );
+
+    // Create step run entries for all skipped child jobs
+    if (childJobsUpdated.length > 0) {
+      await this.stepRunRepository.createMany(childJobsUpdated, {
+        status: JobStatusEnum.SKIPPED,
+      });
+
+      // Create execution details for each skipped job
+      for (const childJob of childJobsUpdated) {
+        await this.createExecutionDetails.execute(
+          CreateExecutionDetailsCommand.create({
+            ...CreateExecutionDetailsCommand.getDetailsFromJob(childJob),
+            detail: DetailEnum.SKIPPED_STEP_BY_CONDITIONS,
+            source: ExecutionDetailsSourceEnum.INTERNAL,
+            status: ExecutionDetailsStatusEnum.SUCCESS,
+            isTest: false,
+            isRetry: false,
+            raw: JSON.stringify({ reason: 'throttled_parent_step' }),
+          })
+        );
+      }
     }
-
-    await this.execute({
-      userId: job._userId,
-      environmentId: job._environmentId,
-      organizationId: command.organizationId,
-      jobId: nextJobToSchedule._id,
-      job: nextJobToSchedule,
-    });
   }
 
   private getExecutionDelayAmount(

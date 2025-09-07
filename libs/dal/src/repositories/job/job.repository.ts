@@ -46,7 +46,12 @@ export class JobRepository extends BaseRepository<JobDBModel, JobEntity, Enforce
     return stored;
   }
 
-  public async updateStatus(environmentId: string, jobId: string, status: JobStatusEnum, deliveryLifecycleState?: DeliveryLifecycleState): Promise<IUpdateResult> {
+  public async updateStatus(
+    environmentId: string,
+    jobId: string,
+    status: JobStatusEnum,
+    deliveryLifecycleState?: DeliveryLifecycleState
+  ): Promise<IUpdateResult> {
     return this.MongooseModel.updateOne(
       {
         _environmentId: environmentId,
@@ -266,6 +271,7 @@ export class JobRepository extends BaseRepository<JobDBModel, JobEntity, Enforce
       updatedJobs.push(childJob);
     }
 
+    console.log('UPDATING CHILD JOB TO SKIPPED', { childJob });
     while (childJob) {
       childJob = await this.MongooseModel.findOneAndUpdate<JobEntity>(
         {
@@ -279,6 +285,8 @@ export class JobRepository extends BaseRepository<JobDBModel, JobEntity, Enforce
           },
         }
       );
+
+      console.log('UPDATING CHILD JOB TO SKIPPED', { childJob });
 
       if (childJob) {
         updatedJobs.push(childJob);
