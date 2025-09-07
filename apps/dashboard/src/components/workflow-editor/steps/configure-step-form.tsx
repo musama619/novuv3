@@ -102,6 +102,7 @@ export const ConfigureStepForm = (props: ConfigureStepFormProps) => {
     StepTypeEnum.EMAIL,
     StepTypeEnum.DIGEST,
     StepTypeEnum.DELAY,
+    StepTypeEnum.THROTTLE,
   ];
 
   const isSupportedStep = supportedStepTypes.includes(step.type);

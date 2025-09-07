@@ -26,6 +26,7 @@ export const ThrottleThreshold = () => {
   return (
     <FormField
       name={`controlValues.${thresholdKey}`}
+      control={step.form.control}
       render={({ field }) => (
         <FormItem>
           <FormLabel tooltip="Maximum number of workflow executions allowed within the throttle window. Defaults to 1.">
