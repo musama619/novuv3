@@ -208,6 +208,8 @@ export class SendMessage {
       severity,
     });
 
+    console.log('EXECUTING STEP NOW!', { stepType });
+
     switch (stepType) {
       case StepTypeEnum.TRIGGER: {
         return { status: SendMessageStatus.SUCCESS };

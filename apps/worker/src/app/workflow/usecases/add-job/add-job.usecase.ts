@@ -227,9 +227,12 @@ export class AddJob {
       throw new Error('Defer duration limit exceeded');
     }
 
+    console.log('QUEUING JOB NOW!');
     await this.stepRunRepository.create(command.job, {
       status: JobStatusEnum.DELAYED,
     });
+
+    console.log('POST QUEUE JOB NOW!');
 
     await this.queueJob(job, delay);
 
@@ -503,7 +506,7 @@ export class AddJob {
     bridgeResponse: ExecuteOutput | null
   ): Promise<{ shouldSkip: boolean }> {
     // Get throttle configuration from bridge response or job step
-    const throttleConfig = bridgeResponse?.outputs || job.step?.controlVariables || {};
+    const throttleConfig = bridgeResponse?.outputs || {};
     const { window, unit, threshold = 1 } = throttleConfig;
 
     if (!window || !unit) {
@@ -511,11 +514,9 @@ export class AddJob {
       return { shouldSkip: false };
     }
 
-    // Calculate window start time
     const windowMs = this.convertToMilliseconds(window as number, unit as string);
     const windowStart = new Date(Date.now() - windowMs);
 
-    // Count executions in the current window
     const executionCount = await this.jobRepository.count({
       _subscriberId: job._subscriberId,
       _templateId: job._templateId,
