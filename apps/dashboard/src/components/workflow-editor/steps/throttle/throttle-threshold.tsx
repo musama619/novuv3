@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/primitives/form/form';
 import { Input } from '@/components/primitives/input';
 import { useSaveForm } from '@/components/workflow-editor/steps/save-form-context';
@@ -8,6 +9,7 @@ const thresholdKey = 'threshold';
 
 export const ThrottleThreshold = () => {
   const { step } = useWorkflow();
+  const { control } = useFormContext();
   const { saveForm } = useSaveForm();
   const { dataSchema } = step?.controls ?? {};
 
@@ -26,7 +28,7 @@ export const ThrottleThreshold = () => {
   return (
     <FormField
       name={`controlValues.${thresholdKey}`}
-      control={step.form.control}
+      control={control}
       render={({ field }) => (
         <FormItem>
           <FormLabel tooltip="Maximum number of workflow executions allowed within the throttle window. Defaults to 1.">

@@ -50,6 +50,7 @@ import { SaveFormContext } from '@/components/workflow-editor/steps/save-form-co
 import { SdkBanner } from '@/components/workflow-editor/steps/sdk-banner';
 import { SkipConditionsButton } from '@/components/workflow-editor/steps/skip-conditions-button';
 import { ConfigureSmsStepPreview } from '@/components/workflow-editor/steps/sms/configure-sms-step-preview';
+import { ThrottleControlValues } from '@/components/workflow-editor/steps/throttle/throttle-control-values';
 import { UpdateWorkflowFn } from '@/components/workflow-editor/workflow-provider';
 import { useFeatureFlag } from '@/hooks/use-feature-flag';
 import { useFormAutosave } from '@/hooks/use-form-autosave';
@@ -60,7 +61,7 @@ import { buildRoute, ROUTES } from '@/utils/routes';
 const STEP_TYPE_TO_INLINE_CONTROL_VALUES: Record<StepTypeEnum, () => React.JSX.Element | null> = {
   [StepTypeEnum.DELAY]: DelayControlValues,
   [StepTypeEnum.DIGEST]: DigestControlValues,
-  [StepTypeEnum.THROTTLE]: () => null,
+  [StepTypeEnum.THROTTLE]: ThrottleControlValues,
   [StepTypeEnum.IN_APP]: () => null,
   [StepTypeEnum.EMAIL]: () => null,
   [StepTypeEnum.SMS]: () => null,

@@ -21,11 +21,21 @@ export const ThrottleEditor = () => {
 
   return (
     <div className="flex flex-col">
-      {((window && unit) || threshold) && (
+      {window && unit && (
         <>
           <SidebarContent size="lg">
             {getComponentByType({
-              component: window?.component || unit?.component || threshold?.component,
+              component: window.component,
+            })}
+          </SidebarContent>
+          <Separator />
+        </>
+      )}
+      {threshold && (
+        <>
+          <SidebarContent size="lg">
+            {getComponentByType({
+              component: threshold.component,
             })}
           </SidebarContent>
           <Separator />

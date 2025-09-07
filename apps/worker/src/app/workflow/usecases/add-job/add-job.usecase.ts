@@ -191,6 +191,17 @@ export class AddJob {
       digestAmount = digestResult.digestAmount;
     }
 
+    if (job.type === StepTypeEnum.THROTTLE) {
+      const throttleResult = await this.handleThrottle(command, job, bridgeResponse);
+
+      if (throttleResult.shouldSkip) {
+        return {
+          workflowStatus: WorkflowRunStatusEnum.COMPLETED,
+          deliveryLifecycleStatus: DeliveryLifecycleStatus.SKIPPED,
+        };
+      }
+    }
+
     if (job.type === StepTypeEnum.DELAY) {
       delayAmount = await this.handleDelay(command, bridgeResponse);
 
@@ -486,6 +497,85 @@ export class AddJob {
     return { digestAmount, digestCreationResult, cronExpression: bridgeResponse?.outputs?.cron as string | undefined };
   }
 
+  private async handleThrottle(
+    command: AddJobCommand,
+    job: JobEntity,
+    bridgeResponse: ExecuteOutput | null
+  ): Promise<{ shouldSkip: boolean }> {
+    // Get throttle configuration from bridge response or job step
+    const throttleConfig = bridgeResponse?.outputs || job.step?.controlVariables || {};
+    const { window, unit, threshold = 1 } = throttleConfig;
+
+    if (!window || !unit) {
+      Logger.warn(`Throttle configuration missing window or unit for job ${job._id}`, LOG_CONTEXT);
+      return { shouldSkip: false };
+    }
+
+    // Calculate window start time
+    const windowMs = this.convertToMilliseconds(window as number, unit as string);
+    const windowStart = new Date(Date.now() - windowMs);
+
+    // Count executions in the current window
+    const executionCount = await this.jobRepository.count({
+      _subscriberId: job._subscriberId,
+      _templateId: job._templateId,
+      _organizationId: command.organizationId,
+      _environmentId: command.environmentId,
+      type: StepTypeEnum.THROTTLE,
+      status: { $in: [JobStatusEnum.COMPLETED, JobStatusEnum.RUNNING] },
+      createdAt: { $gte: windowStart },
+      // If custom throttle key is used, we'd need to store it in job metadata
+      // For now, using subscriber + template as the throttle boundary
+    });
+
+    Logger.debug(
+      `Throttle check for job ${job._id}: ${executionCount}/${threshold as number} executions in window`,
+      LOG_CONTEXT
+    );
+
+    const shouldSkip = executionCount >= (threshold as number);
+
+    if (shouldSkip) {
+      Logger.log(
+        `Job ${job._id} throttled: ${executionCount} executions exceed threshold ${threshold as number}`,
+        LOG_CONTEXT
+      );
+
+      // Update job status to skipped
+      await this.jobRepository.updateOne(
+        { _id: job._id, _environmentId: command.environmentId },
+        {
+          $set: {
+            status: JobStatusEnum.SKIPPED,
+            stepOutput: {
+              throttled: true,
+              executionCount,
+              threshold: threshold as number,
+              windowStart: windowStart.toISOString(),
+            },
+          },
+        }
+      );
+
+      await this.stepRunRepository.create(job, {
+        status: JobStatusEnum.SKIPPED,
+      });
+    }
+
+    return { shouldSkip };
+  }
+
+  private convertToMilliseconds(amount: number, unit: string): number {
+    const unitMap: Record<string, number> = {
+      seconds: 1000,
+      minutes: 60 * 1000,
+      hours: 60 * 60 * 1000,
+      days: 24 * 60 * 60 * 1000,
+    };
+
+    return amount * (unitMap[unit] || unitMap.hours);
+  }
+
   private mapBridgeTimedDigestAmount(bridgeResponse: ExecuteOutput | null, timezone?: string): number | null {
     let bridgeAmount: number | null = null;
     const outputs = bridgeResponse?.outputs as DigestOutput;
@@ -598,7 +688,7 @@ export class AddJob {
 function isJobDeferredType(jobType: StepTypeEnum | undefined) {
   if (!jobType) return false;
 
-  return [StepTypeEnum.DELAY, StepTypeEnum.DIGEST].includes(jobType);
+  return [StepTypeEnum.DELAY, StepTypeEnum.DIGEST, StepTypeEnum.THROTTLE].includes(jobType);
 }
 
 function isShouldHaltJobExecution(digestCreationResult: DigestCreationResultEnum) {

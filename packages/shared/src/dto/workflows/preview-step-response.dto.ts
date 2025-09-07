@@ -62,6 +62,14 @@ export class DelayRenderOutput extends RenderOutput {
   amount: number;
   unit: TimeUnitEnum;
 }
+
+export class ThrottleRenderOutput extends RenderOutput {
+  type: 'throttle';
+  window: number;
+  unit: TimeUnitEnum;
+  threshold?: number;
+  throttleKey?: string;
+}
 export enum TimeUnitEnum {
   SECONDS = 'seconds',
   MINUTES = 'minutes',
@@ -138,10 +146,14 @@ export class GeneratePreviewResponseDto {
       }
     | {
         type: ActionTypeEnum.DELAY;
-        preview: DigestRenderOutput;
+        preview: DelayRenderOutput;
       }
     | {
         type: ActionTypeEnum.DIGEST;
         preview: DigestRenderOutput;
+      }
+    | {
+        type: ActionTypeEnum.THROTTLE;
+        preview: ThrottleRenderOutput;
       };
 }

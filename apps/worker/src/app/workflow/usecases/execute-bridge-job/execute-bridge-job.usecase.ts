@@ -27,6 +27,7 @@ import {
   InAppResult,
   PostActionEnum,
   State,
+  ThrottleResult,
 } from '@novu/framework/internal';
 import {
   ControlValuesLevelEnum,
@@ -302,6 +303,18 @@ export class ExecuteBridgeJob {
             lastReadDate: null,
           } satisfies InAppResult;
         }
+      }
+      case 'throttle': {
+        // Return throttle result based on job execution status
+        // The actual throttling logic determines if the job was throttled
+        const wasThrottled = job.status === JobStatusEnum.SKIPPED;
+
+        return {
+          throttled: wasThrottled,
+          executionCount: 1, // TODO: This should be calculated based on actual throttle window logic
+          threshold: (job.step?.controlVariables?.threshold as number) || 1,
+          windowStart: job.createdAt,
+        } satisfies ThrottleResult;
       }
       default: {
         return {};
