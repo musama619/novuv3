@@ -84,7 +84,7 @@ export const validateDigest = (job: JobEntity): void => {
     throw new BadRequestException('Job is not a digest type');
   }
 
-  if (isRegularDigest(job.digest.type)) {
+  if (job.digest.type && (job.digest.type === DigestTypeEnum.REGULAR || job.digest.type === DigestTypeEnum.BACKOFF) && isRegularDigest(job.digest.type)) {
     validateAmountAndUnit(job.digest as IDigestRegularMetadata);
   }
 

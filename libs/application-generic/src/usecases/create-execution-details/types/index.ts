@@ -56,4 +56,6 @@ export enum DetailEnum {
   DELAY_MISCONFIGURATION = 'Invalid delay configuration',
   DEFER_DURATION_LIMIT_EXCEEDED = 'Defer duration limit exceeded',
   MESSAGE_SEVERITY_OVERRIDDEN = 'Severity for the message was overridden',
+  STEP_THROTTLED = 'Step was throttled due to rate limiting',
+  THROTTLE_LIMIT_EXCEEDED = 'Throttle limit exceeded for the given window',
 }

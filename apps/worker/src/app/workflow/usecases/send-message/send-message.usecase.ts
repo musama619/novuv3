@@ -53,6 +53,7 @@ import { SendMessageInApp } from './send-message-in-app.usecase';
 import { SendMessagePush } from './send-message-push.usecase';
 import { SendMessageSms } from './send-message-sms.usecase';
 import { SendMessageResult, SendMessageStatus } from './send-message-type.usecase';
+import { Throttle } from './throttle';
 
 @Injectable()
 export class SendMessage {
@@ -67,6 +68,7 @@ export class SendMessage {
     private getSubscriberTemplatePreferenceUsecase: GetSubscriberTemplatePreference,
     private notificationTemplateRepository: NotificationTemplateRepository,
     private sendMessageDelay: SendMessageDelay,
+    private throttle: Throttle,
     private executeStepCustom: ExecuteStepCustom,
     private conditionsFilter: ConditionsFilter,
     private subscriberRepository: SubscriberRepository,
@@ -230,6 +232,9 @@ export class SendMessage {
       }
       case StepTypeEnum.DELAY: {
         return await this.sendMessageDelay.execute(command);
+      }
+      case StepTypeEnum.THROTTLE: {
+        return await this.throttle.execute(command);
       }
       case StepTypeEnum.CUSTOM: {
         return await this.executeStepCustom.execute(sendMessageChannelCommand);

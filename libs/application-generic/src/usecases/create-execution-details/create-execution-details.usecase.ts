@@ -54,6 +54,10 @@ const mapDetailToEventType = {
   [DetailEnum.DELAY_MISCONFIGURATION]: 'delay_misconfigured',
   [DetailEnum.DEFER_DURATION_LIMIT_EXCEEDED]: 'delay_limit_exceeded',
 
+  // Throttle events
+  [DetailEnum.STEP_THROTTLED]: 'step_throttled',
+  [DetailEnum.THROTTLE_LIMIT_EXCEEDED]: 'throttle_limit_exceeded',
+
   // Workflow events
   [DetailEnum.STEP_COMPLETED]: 'step_completed',
 

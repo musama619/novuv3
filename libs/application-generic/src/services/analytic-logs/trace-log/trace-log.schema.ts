@@ -99,6 +99,8 @@ export type EventType =
   | 'delay_completed'
   | 'delay_misconfigured'
   | 'delay_limit_exceeded'
+  | 'step_throttled'
+  | 'throttle_limit_exceeded'
   | 'bridge_response_received'
   | 'bridge_execution_failed'
   | 'bridge_execution_skipped'

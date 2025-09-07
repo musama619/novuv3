@@ -18,6 +18,7 @@ import {
   NodeData,
   PushNode,
   SmsNode,
+  ThrottleNode,
   TriggerNode,
 } from './nodes';
 
@@ -33,6 +34,7 @@ export const nodeTypes = {
   chat: ChatNode,
   delay: DelayNode,
   digest: DigestNode,
+  throttle: ThrottleNode,
   custom: CustomNode,
   add: AddNode,
 };
@@ -66,6 +68,8 @@ const mapStepToNodeContent = (step: Step, workflowOrigin: ResourceOriginEnum): s
       return delayMessage;
     case StepTypeEnum.DIGEST:
       return 'Batches events into one coherent message before delivery to the subscriber.';
+    case StepTypeEnum.THROTTLE:
+      return 'Limits the number of workflow executions within a specified time window.';
     case StepTypeEnum.CUSTOM:
       return 'Executes the business logic in your bridge application';
     default:

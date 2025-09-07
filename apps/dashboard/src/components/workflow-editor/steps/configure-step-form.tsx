@@ -60,6 +60,7 @@ import { buildRoute, ROUTES } from '@/utils/routes';
 const STEP_TYPE_TO_INLINE_CONTROL_VALUES: Record<StepTypeEnum, () => React.JSX.Element | null> = {
   [StepTypeEnum.DELAY]: DelayControlValues,
   [StepTypeEnum.DIGEST]: DigestControlValues,
+  [StepTypeEnum.THROTTLE]: () => null,
   [StepTypeEnum.IN_APP]: () => null,
   [StepTypeEnum.EMAIL]: () => null,
   [StepTypeEnum.SMS]: () => null,
@@ -79,6 +80,7 @@ const STEP_TYPE_TO_PREVIEW: Record<StepTypeEnum, ((props: HTMLAttributes<HTMLDiv
   [StepTypeEnum.TRIGGER]: null,
   [StepTypeEnum.DIGEST]: null,
   [StepTypeEnum.DELAY]: null,
+  [StepTypeEnum.THROTTLE]: null,
 };
 
 type ConfigureStepFormProps = {

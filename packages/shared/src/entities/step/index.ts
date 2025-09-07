@@ -123,8 +123,21 @@ export interface IDelayScheduledMetadata {
   delayPath: string;
 }
 
+export enum ThrottleTypeEnum {
+  THROTTLE = 'throttle',
+}
+
+export interface IThrottleMetadata {
+  type: ThrottleTypeEnum.THROTTLE;
+  window: number;
+  unit: DigestUnitEnum;
+  threshold?: number;
+  throttleKey?: string;
+}
+
 export type IWorkflowStepMetadata =
   | IDigestRegularMetadata
   | IDigestTimedMetadata
   | IDelayRegularMetadata
-  | IDelayScheduledMetadata;
+  | IDelayScheduledMetadata
+  | IThrottleMetadata;

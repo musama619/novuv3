@@ -12,6 +12,7 @@ import {
   InAppStepUpsertDto,
   PushStepUpsertDto,
   SmsStepUpsertDto,
+  ThrottleStepUpsertDto,
 } from './create-step.dto';
 import { PreferencesRequestDto } from './preferences.request.dto';
 import { WorkflowCommonsFields } from './workflow-commons.dto';
@@ -24,6 +25,7 @@ import { WorkflowCommonsFields } from './workflow-commons.dto';
   ChatStepUpsertDto,
   DelayStepUpsertDto,
   DigestStepUpsertDto,
+  ThrottleStepUpsertDto,
   CustomStepUpsertDto
 )
 export class CreateWorkflowDto extends WorkflowCommonsFields {
@@ -46,6 +48,7 @@ export class CreateWorkflowDto extends WorkflowCommonsFields {
         { $ref: getSchemaPath(ChatStepUpsertDto) },
         { $ref: getSchemaPath(DelayStepUpsertDto) },
         { $ref: getSchemaPath(DigestStepUpsertDto) },
+        { $ref: getSchemaPath(ThrottleStepUpsertDto) },
         { $ref: getSchemaPath(CustomStepUpsertDto) },
       ],
       discriminator: {
@@ -58,6 +61,7 @@ export class CreateWorkflowDto extends WorkflowCommonsFields {
           [StepTypeEnum.CHAT]: getSchemaPath(ChatStepUpsertDto),
           [StepTypeEnum.DELAY]: getSchemaPath(DelayStepUpsertDto),
           [StepTypeEnum.DIGEST]: getSchemaPath(DigestStepUpsertDto),
+          [StepTypeEnum.THROTTLE]: getSchemaPath(ThrottleStepUpsertDto),
           [StepTypeEnum.CUSTOM]: getSchemaPath(CustomStepUpsertDto),
         },
       },
@@ -76,6 +80,7 @@ export class CreateWorkflowDto extends WorkflowCommonsFields {
         { name: StepTypeEnum.CHAT, value: ChatStepUpsertDto },
         { name: StepTypeEnum.DELAY, value: DelayStepUpsertDto },
         { name: StepTypeEnum.DIGEST, value: DigestStepUpsertDto },
+        { name: StepTypeEnum.THROTTLE, value: ThrottleStepUpsertDto },
         { name: StepTypeEnum.CUSTOM, value: CustomStepUpsertDto },
       ],
     },
@@ -89,6 +94,7 @@ export class CreateWorkflowDto extends WorkflowCommonsFields {
     | ChatStepUpsertDto
     | DelayStepUpsertDto
     | DigestStepUpsertDto
+    | ThrottleStepUpsertDto
     | CustomStepUpsertDto
   )[];
 

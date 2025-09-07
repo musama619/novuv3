@@ -54,6 +54,7 @@ import {
   SendMessageSms,
   SetJobAsCompleted,
   SetJobAsFailed,
+  Throttle,
   UpdateJobStatus,
   WebhookFilterBackoffStrategy,
 } from './usecases';
@@ -158,6 +159,7 @@ const USE_CASES = [
   SendMessageInApp,
   SendMessagePush,
   SendMessageSms,
+  Throttle,
   ExecuteStepCustom,
   StoreSubscriberJobs,
   SetJobAsCompleted,
