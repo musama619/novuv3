@@ -271,7 +271,6 @@ export class JobRepository extends BaseRepository<JobDBModel, JobEntity, Enforce
       updatedJobs.push(childJob);
     }
 
-    console.log('UPDATING CHILD JOB TO SKIPPED', { childJob });
     while (childJob) {
       childJob = await this.MongooseModel.findOneAndUpdate<JobEntity>(
         {
@@ -285,8 +284,6 @@ export class JobRepository extends BaseRepository<JobDBModel, JobEntity, Enforce
           },
         }
       );
-
-      console.log('UPDATING CHILD JOB TO SKIPPED', { childJob });
 
       if (childJob) {
         updatedJobs.push(childJob);

@@ -65,7 +65,6 @@ export class RunJob {
 
     this.assignLogger(job);
 
-    console.log('IM RUNNIG NEW ', { job });
     const { canceled, activeDigestFollower } = await this.delayedEventIsCanceled(job);
 
     if (canceled && !activeDigestFollower) {

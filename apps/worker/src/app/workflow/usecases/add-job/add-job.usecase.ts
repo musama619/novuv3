@@ -280,13 +280,6 @@ export class AddJob {
   private async executeNoneDeferredJob(command: AddJobCommand): Promise<AddJobResult> {
     const { job } = command;
 
-    if (job.status === JobStatusEnum.SKIPPED) {
-      return {
-        workflowStatus: null,
-        deliveryLifecycleStatus: null,
-      };
-    }
-
     Logger.verbose(`Updating status to queued for job ${job._id}`, LOG_CONTEXT);
     await this.jobRepository.updateStatus(command.environmentId, job._id, JobStatusEnum.QUEUED);
 
@@ -528,7 +521,6 @@ export class AddJob {
       _organizationId: command.organizationId,
       _environmentId: command.environmentId,
       type: StepTypeEnum.THROTTLE,
-      status: { $in: [JobStatusEnum.COMPLETED, JobStatusEnum.RUNNING] },
       createdAt: { $gte: windowStart },
       // If custom throttle key is used, we'd need to store it in job metadata
       // For now, using subscriber + template as the throttle boundary
@@ -540,33 +532,6 @@ export class AddJob {
     );
 
     const shouldSkip = executionCount >= (threshold as number);
-
-    if (shouldSkip) {
-      Logger.log(
-        `Job ${job._id} throttled: ${executionCount} executions exceed threshold ${threshold as number}`,
-        LOG_CONTEXT
-      );
-
-      // Update job status to skipped
-      await this.jobRepository.updateOne(
-        { _id: job._id, _environmentId: command.environmentId },
-        {
-          $set: {
-            status: JobStatusEnum.SKIPPED,
-            stepOutput: {
-              throttled: true,
-              executionCount,
-              threshold: threshold as number,
-              windowStart: windowStart.toISOString(),
-            },
-          },
-        }
-      );
-
-      await this.stepRunRepository.create(job, {
-        status: JobStatusEnum.SKIPPED,
-      });
-    }
 
     return { shouldSkip, executionCount, threshold: threshold as number, windowStart: windowStart.toISOString() };
   }
@@ -622,26 +587,32 @@ export class AddJob {
   }
 
   private async handleThrottleSkip(_command: AddJobCommand, job: JobEntity, throttleResult: { shouldSkip: boolean }) {
-    this.jobRepository.update(
-      {
-        _environmentId: job._environmentId,
-        _id: job._id,
-      },
+    Logger.log(
+      `Job ${job._id} throttled: ${executionCount} executions exceed threshold ${threshold as number}`,
+      LOG_CONTEXT
+    );
+
+    await this.jobRepository.updateOne(
+      { _id: job._id, _environmentId: command.environmentId },
       {
         $set: {
           status: JobStatusEnum.SKIPPED,
+          stepOutput: {
+            throttled: true,
+            executionCount: throttleResult.executionCount,
+            threshold: throttleResult.threshold as number,
+            windowStart: windowStart.toISOString(),
+          },
         },
       }
     );
 
-    // Skip all subsequent jobs in the workflow chain
-    const childJobsUpdated = await this.jobRepository.updateAllChildJobStatus(
-      job,
-      JobStatusEnum.SKIPPED,
-      job._id // Use the throttled job's ID as reference
-    );
+    await this.stepRunRepository.create(job, {
+      status: JobStatusEnum.SKIPPED,
+    });
 
-    // Create step run entries for all skipped child jobs
+    const childJobsUpdated = await this.jobRepository.updateAllChildJobStatus(job, JobStatusEnum.SKIPPED, job._id);
+
     if (childJobsUpdated.length > 0) {
       await this.stepRunRepository.createMany(childJobsUpdated, {
         status: JobStatusEnum.SKIPPED,
