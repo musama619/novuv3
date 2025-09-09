@@ -194,7 +194,11 @@ export class AddJob {
       const throttleResult = await this.handleThrottle(command, job, bridgeResponse);
 
       if (throttleResult.shouldSkip) {
-        await this.handleThrottleSkip(command, job, throttleResult);
+        await this.handleThrottleSkip(
+          command,
+          job,
+          throttleResult as { shouldSkip: boolean; executionCount: number; threshold: number; windowStart: string }
+        );
 
         return {
           workflowStatus: WorkflowRunStatusEnum.COMPLETED,
@@ -586,9 +590,13 @@ export class AddJob {
     });
   }
 
-  private async handleThrottleSkip(_command: AddJobCommand, job: JobEntity, throttleResult: { shouldSkip: boolean }) {
+  private async handleThrottleSkip(
+    command: AddJobCommand,
+    job: JobEntity,
+    throttleResult: { shouldSkip: boolean; executionCount: number; threshold: number; windowStart: string }
+  ) {
     Logger.log(
-      `Job ${job._id} throttled: ${executionCount} executions exceed threshold ${threshold as number}`,
+      `Job ${job._id} throttled: ${throttleResult.executionCount} executions exceed threshold ${throttleResult.threshold as number}`,
       LOG_CONTEXT
     );
 
@@ -601,7 +609,7 @@ export class AddJob {
             throttled: true,
             executionCount: throttleResult.executionCount,
             threshold: throttleResult.threshold as number,
-            windowStart: windowStart.toISOString(),
+            windowStart: throttleResult.windowStart,
           },
         },
       }
