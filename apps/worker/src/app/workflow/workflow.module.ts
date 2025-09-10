@@ -26,6 +26,7 @@ import {
   TriggerMulticast,
   WorkflowInMemoryProviderService,
   WorkflowRunService,
+  RedisThrottleService,
 } from '@novu/application-generic';
 import {
   CommunityOrganizationRepository,
@@ -179,7 +180,7 @@ const USE_CASES = [
   WorkflowRunService,
 ];
 
-const PROVIDERS: Provider[] = [];
+const PROVIDERS: Provider[] = [RedisThrottleService];
 const activeWorkersToken: any = {
   provide: 'ACTIVE_WORKERS',
   useFactory: (...args: any[]) => {

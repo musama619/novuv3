@@ -6,6 +6,7 @@ import {
   CreateExecutionDetails,
   CreateExecutionDetailsCommand,
   DetailEnum,
+  FeatureFlagsService,
   getDigestType,
   IFilterVariables,
   InstrumentUsecase,
@@ -23,6 +24,7 @@ import {
   TierRestrictionsValidateUsecase,
   WorkflowRunStatusEnum,
 } from '@novu/application-generic';
+import { RedisThrottleService } from '@novu/application-generic/src/services/throttle/redis-throttle.service';
 import { JobEntity, JobRepository, JobStatusEnum, SubscriberRepository } from '@novu/dal';
 import { DigestOutput, ExecuteOutput } from '@novu/framework/internal';
 import {
@@ -32,6 +34,7 @@ import {
   DigestTypeEnum,
   ExecutionDetailsSourceEnum,
   ExecutionDetailsStatusEnum,
+  FeatureFlagsKeysEnum,
   IDigestBaseMetadata,
   IDigestRegularMetadata,
   IDigestTimedMetadata,
@@ -83,7 +86,9 @@ export class AddJob {
     private tierRestrictionsValidateUsecase: TierRestrictionsValidateUsecase,
     private executeBridgeJob: ExecuteBridgeJob,
     private stepRunRepository: StepRunRepository,
-    private subscriberRepository: SubscriberRepository
+    private subscriberRepository: SubscriberRepository,
+    private redisThrottleService: RedisThrottleService,
+    private featureFlagsService: FeatureFlagsService
   ) {}
 
   @InstrumentUsecase()
@@ -517,7 +522,74 @@ export class AddJob {
     }
 
     const windowMs = this.convertToMilliseconds(window as number, unit as string);
-    const windowStart = new Date(Date.now() - windowMs);
+    const nowMs = Date.now();
+
+    // Check if Redis reservations are enabled
+    const isRedisReservationsEnabled = await this.featureFlagsService.getFlag({
+      key: FeatureFlagsKeysEnum.IS_THROTTLE_REDIS_RESERVATIONS_ENABLED,
+      defaultValue: false,
+      organization: { _id: command.organizationId },
+    });
+
+    if (isRedisReservationsEnabled) {
+      try {
+        // Try to reserve a slot using Redis atomic operation
+        const jobId = `${job._notificationId}:${job.step.stepId}`;
+        const reservationResult = await this.redisThrottleService.reserveThrottleSlot({
+          environmentId: command.environmentId,
+          subscriberId: job._subscriberId,
+          workflowId: job._templateId,
+          stepId: job.step.stepId,
+          jobId,
+          windowMs,
+          limit: threshold as number,
+          nowMs,
+        });
+
+        Logger.debug(
+          {
+            jobId: job._id,
+            reservationResult,
+            threshold,
+            windowMs,
+          },
+          'Redis throttle reservation result',
+          LOG_CONTEXT
+        );
+
+        if (!reservationResult.granted) {
+          return {
+            shouldSkip: true,
+            executionCount: reservationResult.count,
+            threshold: threshold as number,
+            windowStart: new Date(reservationResult.windowStartMs).toISOString(),
+          };
+        }
+
+        // Slot reserved successfully, proceed with execution
+        return {
+          shouldSkip: false,
+          executionCount: reservationResult.count,
+          threshold: threshold as number,
+          windowStart: new Date(reservationResult.windowStartMs).toISOString(),
+        };
+      } catch (error) {
+        Logger.error(
+          {
+            error,
+            jobId: job._id,
+            environmentId: command.environmentId,
+            subscriberId: job._subscriberId,
+          },
+          'Failed to reserve throttle slot, falling back to database check',
+          LOG_CONTEXT
+        );
+        // Fall through to database-based throttle check
+      }
+    }
+
+    // Fallback to original database-based throttle check
+    const windowStart = new Date(nowMs - windowMs);
 
     const executionCount = await this.jobRepository.count({
       _subscriberId: job._subscriberId,
