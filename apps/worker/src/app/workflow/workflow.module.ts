@@ -29,6 +29,8 @@ import {
   RedisThrottleService,
 } from '@novu/application-generic';
 import {
+  ChannelConnectionRepository,
+  ChannelEndpointRepository,
   CommunityOrganizationRepository,
   CommunityUserRepository,
   JobRepository,
@@ -89,7 +91,14 @@ const enterpriseImports = (): Array<Type | DynamicModule | Promise<DynamicModule
   return modules;
 };
 
-const REPOSITORIES = [JobRepository, CommunityOrganizationRepository, PreferencesRepository, CommunityUserRepository];
+const REPOSITORIES = [
+  JobRepository,
+  CommunityOrganizationRepository,
+  PreferencesRepository,
+  CommunityUserRepository,
+  ChannelEndpointRepository,
+  ChannelConnectionRepository,
+];
 
 const webhookProvider: Provider = {
   provide: SendWebhookMessage,
