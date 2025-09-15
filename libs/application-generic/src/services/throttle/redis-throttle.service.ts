@@ -2,10 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { InMemoryProviderService } from '../in-memory-provider';
 import {
-  IThrottleReservationParams,
-  IThrottleReservationResult,
   IThrottleReleaseParams,
   IThrottleReleaseResult,
+  IThrottleReservationParams,
+  IThrottleReservationResult,
 } from './throttle.types';
 
 const LOG_CONTEXT = 'RedisThrottleService';
@@ -102,10 +102,10 @@ export class RedisThrottleService {
 
     try {
       if (!this.reserveScriptSha) {
-        this.reserveScriptSha = await client.script('LOAD', this.reserveScript);
+        this.reserveScriptSha = (await client.script('LOAD', this.reserveScript)) as string;
       }
       if (!this.releaseScriptSha) {
-        this.releaseScriptSha = await client.script('LOAD', this.releaseScript);
+        this.releaseScriptSha = (await client.script('LOAD', this.releaseScript)) as string;
       }
     } catch (error) {
       Logger.error('Failed to load Lua scripts', error, LOG_CONTEXT);
@@ -127,7 +127,7 @@ export class RedisThrottleService {
     try {
       await this.ensureScriptsLoaded();
       const result = await client.evalsha(
-        this.reserveScriptSha as string,
+        this.reserveScriptSha!,
         1,
         setKey,
         limit.toString(),
@@ -142,7 +142,7 @@ export class RedisThrottleService {
         this.reserveScriptSha = null;
         await this.ensureScriptsLoaded();
         const result = await client.evalsha(
-          this.reserveScriptSha as string,
+          this.reserveScriptSha!,
           1,
           setKey,
           limit.toString(),
@@ -163,7 +163,7 @@ export class RedisThrottleService {
 
     try {
       await this.ensureScriptsLoaded();
-      const result = await client.evalsha(this.releaseScriptSha as string, 1, setKey, jobId);
+      const result = await client.evalsha(this.releaseScriptSha!, 1, setKey, jobId);
       return result as [number, number, number];
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -171,7 +171,7 @@ export class RedisThrottleService {
         Logger.warn('Script not found, reloading and retrying', LOG_CONTEXT);
         this.releaseScriptSha = null;
         await this.ensureScriptsLoaded();
-        const result = await client.evalsha(this.releaseScriptSha as string, 1, setKey, jobId);
+        const result = await client.evalsha(this.releaseScriptSha!, 1, setKey, jobId);
         return result as [number, number, number];
       }
       throw error;
