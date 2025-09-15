@@ -1,12 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { InMemoryProviderService } from '../in-memory-provider';
-import {
-  IThrottleReleaseParams,
-  IThrottleReleaseResult,
-  IThrottleReservationParams,
-  IThrottleReservationResult,
-} from './throttle.types';
+import { IThrottleReservationParams, IThrottleReservationResult } from './throttle.types';
 
 const LOG_CONTEXT = 'RedisThrottleService';
 
@@ -155,29 +150,6 @@ export class RedisThrottleService {
     }
   }
 
-  private async executeReleaseScript(setKey: string, jobId: string): Promise<[number, number, number]> {
-    const client = this.redisClient;
-    if (!client) {
-      throw new Error('Redis client not available');
-    }
-
-    try {
-      await this.ensureScriptsLoaded();
-      const result = await client.evalsha(this.releaseScriptSha!, 1, setKey, jobId);
-      return result as [number, number, number];
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage?.includes('NOSCRIPT')) {
-        Logger.warn('Script not found, reloading and retrying', LOG_CONTEXT);
-        this.releaseScriptSha = null;
-        await this.ensureScriptsLoaded();
-        const result = await client.evalsha(this.releaseScriptSha!, 1, setKey, jobId);
-        return result as [number, number, number];
-      }
-      throw error;
-    }
-  }
-
   async reserveThrottleSlot(params: IThrottleReservationParams): Promise<IThrottleReservationResult> {
     const windowStartMs = this.computeWindowStart(params.nowMs, params.windowMs);
     const setKey = this.buildSetKey({
@@ -242,58 +214,6 @@ export class RedisThrottleService {
       }
 
       throw error;
-    }
-  }
-
-  async releaseThrottleSlot(params: IThrottleReleaseParams): Promise<IThrottleReleaseResult> {
-    const windowStartMs = this.computeWindowStart(params.nowMs, params.windowMs);
-    const setKey = this.buildSetKey({
-      environmentId: params.environmentId,
-      subscriberId: params.subscriberId,
-      workflowId: params.workflowId,
-      stepId: params.stepId,
-      windowStartMs,
-    });
-
-    try {
-      const [removed, count, ttlSecRemaining] = await this.executeReleaseScript(setKey, params.jobId);
-
-      const result: IThrottleReleaseResult = {
-        released: removed === 1,
-        count,
-        ttlMs: ttlSecRemaining > 0 ? ttlSecRemaining * 1000 : 0,
-      };
-
-      Logger.debug(
-        {
-          ...params,
-          windowStartMs,
-          setKey,
-          result,
-        },
-        'Throttle slot release result',
-        LOG_CONTEXT
-      );
-
-      return result;
-    } catch (error) {
-      Logger.error(
-        {
-          error,
-          params,
-          windowStartMs,
-          setKey,
-        },
-        'Failed to release throttle slot',
-        LOG_CONTEXT
-      );
-
-      // Don't throw on release failures, just log
-      return {
-        released: false,
-        count: 0,
-        ttlMs: 0,
-      };
     }
   }
 }
