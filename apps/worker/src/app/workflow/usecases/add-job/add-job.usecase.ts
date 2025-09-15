@@ -17,6 +17,7 @@ import {
   LogDecorator,
   NormalizeVariables,
   NormalizeVariablesCommand,
+  RedisThrottleService,
   StandardQueueService,
   StepRunRepository,
   StepRunStatus,
@@ -24,7 +25,6 @@ import {
   TierRestrictionsValidateUsecase,
   WorkflowRunStatusEnum,
 } from '@novu/application-generic';
-import { RedisThrottleService } from '@novu/application-generic/src/services/throttle/redis-throttle.service';
 import { JobEntity, JobRepository, JobStatusEnum, SubscriberRepository } from '@novu/dal';
 import { DigestOutput, ExecuteOutput } from '@novu/framework/internal';
 import {
@@ -524,92 +524,48 @@ export class AddJob {
     const windowMs = this.convertToMilliseconds(window as number, unit as string);
     const nowMs = Date.now();
 
-    // Check if Redis reservations are enabled
-    const isRedisReservationsEnabled = await this.featureFlagsService.getFlag({
-      key: FeatureFlagsKeysEnum.IS_THROTTLE_REDIS_RESERVATIONS_ENABLED,
-      defaultValue: false,
-      organization: { _id: command.organizationId },
-    });
-
-    if (isRedisReservationsEnabled) {
-      try {
-        // Try to reserve a slot using Redis atomic operation
-        const jobId = `${job._notificationId}:${job.step.stepId}`;
-        const reservationResult = await this.redisThrottleService.reserveThrottleSlot({
-          environmentId: command.environmentId,
-          subscriberId: job._subscriberId,
-          workflowId: job._templateId,
-          stepId: job.step.stepId,
-          jobId,
-          windowMs,
-          limit: threshold as number,
-          nowMs,
-        });
-
-        Logger.debug(
-          {
-            jobId: job._id,
-            reservationResult,
-            threshold,
-            windowMs,
-          },
-          'Redis throttle reservation result',
-          LOG_CONTEXT
-        );
-
-        if (!reservationResult.granted) {
-          return {
-            shouldSkip: true,
-            executionCount: reservationResult.count,
-            threshold: threshold as number,
-            windowStart: new Date(reservationResult.windowStartMs).toISOString(),
-          };
-        }
-
-        // Slot reserved successfully, proceed with execution
-        return {
-          shouldSkip: false,
-          executionCount: reservationResult.count,
-          threshold: threshold as number,
-          windowStart: new Date(reservationResult.windowStartMs).toISOString(),
-        };
-      } catch (error) {
-        Logger.error(
-          {
-            error,
-            jobId: job._id,
-            environmentId: command.environmentId,
-            subscriberId: job._subscriberId,
-          },
-          'Failed to reserve throttle slot, falling back to database check',
-          LOG_CONTEXT
-        );
-        // Fall through to database-based throttle check
-      }
+    if (!job.step.stepId) {
+      throw new Error('Step ID is required for throttle reservation');
     }
-
-    // Fallback to original database-based throttle check
-    const windowStart = new Date(nowMs - windowMs);
-
-    const executionCount = await this.jobRepository.count({
-      _subscriberId: job._subscriberId,
-      _templateId: job._templateId,
-      _organizationId: command.organizationId,
-      _environmentId: command.environmentId,
-      type: StepTypeEnum.THROTTLE,
-      createdAt: { $gte: windowStart },
-      // If custom throttle key is used, we'd need to store it in job metadata
-      // For now, using subscriber + template as the throttle boundary
+    const jobId = `${job._notificationId}:${job.step.stepId}`;
+    const reservationResult = await this.redisThrottleService.reserveThrottleSlot({
+      environmentId: command.environmentId,
+      subscriberId: job._subscriberId,
+      workflowId: job._templateId,
+      stepId: job.step.stepId,
+      jobId,
+      windowMs,
+      limit: threshold as number,
+      nowMs,
     });
 
     Logger.debug(
-      `Throttle check for job ${job._id}: ${executionCount}/${threshold as number} executions in window`,
+      {
+        jobId: job._id,
+        reservationResult,
+        threshold,
+        windowMs,
+      },
+      'Redis throttle reservation result',
       LOG_CONTEXT
     );
 
-    const shouldSkip = executionCount >= (threshold as number);
+    if (!reservationResult.granted) {
+      return {
+        shouldSkip: true,
+        executionCount: reservationResult.count,
+        threshold: threshold as number,
+        windowStart: new Date(reservationResult.windowStartMs).toISOString(),
+      };
+    }
 
-    return { shouldSkip, executionCount, threshold: threshold as number, windowStart: windowStart.toISOString() };
+    // Slot reserved successfully, proceed with execution
+    return {
+      shouldSkip: false,
+      executionCount: reservationResult.count,
+      threshold: threshold as number,
+      windowStart: new Date(reservationResult.windowStartMs).toISOString(),
+    };
   }
 
   private convertToMilliseconds(amount: number, unit: string): number {

@@ -15,8 +15,10 @@ import {
   GetPreferences,
   GetSubscriberTemplatePreference,
   GetTopicSubscribersUseCase,
+  InMemoryProviderService,
   NormalizeVariables,
   ProcessTenant,
+  RedisThrottleService,
   SelectIntegration,
   SelectVariant,
   SendWebhookMessage,
@@ -26,7 +28,6 @@ import {
   TriggerMulticast,
   WorkflowInMemoryProviderService,
   WorkflowRunService,
-  RedisThrottleService,
 } from '@novu/application-generic';
 import {
   ChannelConnectionRepository,
@@ -209,11 +210,20 @@ const memoryQueueService = {
   },
 };
 
+const inMemoryProviderService = {
+  provide: InMemoryProviderService,
+  useFactory: (workflowInMemoryProviderService: WorkflowInMemoryProviderService) => {
+    return workflowInMemoryProviderService.inMemoryProviderService;
+  },
+  inject: [WorkflowInMemoryProviderService],
+};
+
 @Module({
   imports: [SharedModule, ...enterpriseImports()],
   controllers: [],
   providers: [
     memoryQueueService,
+    inMemoryProviderService,
     ...ACTIVE_WORKERS,
     ...PROVIDERS,
     ...USE_CASES,
