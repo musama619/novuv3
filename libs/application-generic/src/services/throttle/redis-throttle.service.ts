@@ -76,8 +76,13 @@ export class RedisThrottleService {
     workflowId: string;
     stepId: string;
     windowStartMs: number;
+    throttleKey?: string;
+    throttleValue?: string;
   }): string {
-    return `throttle:${params.environmentId}:${params.subscriberId}:${params.workflowId}:${params.stepId}:${params.windowStartMs}:set`;
+    const baseKey = `throttle:${params.environmentId}:${params.subscriberId}:${params.workflowId}:${params.stepId}`;
+    const throttleKeyPart =
+      params.throttleKey && params.throttleValue ? `:${params.throttleKey}:${params.throttleValue}` : '';
+    return `${baseKey}${throttleKeyPart}:${params.windowStartMs}:set`;
   }
 
   private computeWindowStart(nowMs: number, windowMs: number): number {
@@ -158,6 +163,8 @@ export class RedisThrottleService {
       workflowId: params.workflowId,
       stepId: params.stepId,
       windowStartMs,
+      throttleKey: params.throttleKey,
+      throttleValue: params.throttleValue,
     });
 
     const ttlSec = this.computeTtlSeconds(windowStartMs, params.windowMs, params.nowMs);

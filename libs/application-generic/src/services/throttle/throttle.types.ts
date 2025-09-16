@@ -7,6 +7,8 @@ export interface IThrottleReservationParams {
   windowMs: number;
   limit: number;
   nowMs: number;
+  throttleKey?: string;
+  throttleValue?: string;
 }
 
 export interface IThrottleReservationResult {
@@ -24,6 +26,8 @@ export interface IThrottleReleaseParams {
   jobId: string;
   windowMs: number;
   nowMs: number;
+  throttleKey?: string;
+  throttleValue?: string;
 }
 
 export interface IThrottleReleaseResult {

@@ -268,7 +268,7 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
     expect(messages?.length).to.equal(1);
   });
 
-  it.skip('should throttle based on throttleKey', async () => {
+  it('should throttle based on throttleKey', async () => {
     const workflowBody: CreateWorkflowDto = {
       name: 'Test Throttle Key Workflow',
       workflowId: 'test-throttle-key-workflow',

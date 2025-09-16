@@ -8,6 +8,7 @@ import {
   DetailEnum,
   FeatureFlagsService,
   getDigestType,
+  getNestedValue,
   IFilterVariables,
   InstrumentUsecase,
   isLookBackDigestOutput,
@@ -514,7 +515,7 @@ export class AddJob {
   ): Promise<{ shouldSkip: boolean; executionCount?: number; threshold?: number; windowStart?: string }> {
     // Get throttle configuration from bridge response or job step
     const throttleConfig = bridgeResponse?.outputs || {};
-    const { window, unit, threshold = 1 } = throttleConfig;
+    const { window, unit, threshold = 1, throttleKey } = throttleConfig;
 
     if (!window || !unit) {
       Logger.warn(`Throttle configuration missing window or unit for job ${job._id}`, LOG_CONTEXT);
@@ -527,6 +528,21 @@ export class AddJob {
     if (!job.step.stepId) {
       throw new Error('Step ID is required for throttle reservation');
     }
+
+    // Extract throttle value from payload if throttleKey is provided (similar to digestKey logic)
+    const throttleValue = throttleKey ? getNestedValue(job.payload, throttleKey as string) : undefined;
+
+    Logger.debug(
+      {
+        jobId: job._id,
+        throttleKey,
+        throttleValue,
+        payload: job.payload,
+      },
+      'Throttle key extraction',
+      LOG_CONTEXT
+    );
+
     const jobId = `${job._notificationId}:${job.step.stepId}`;
     const reservationResult = await this.redisThrottleService.reserveThrottleSlot({
       environmentId: command.environmentId,
@@ -537,6 +553,8 @@ export class AddJob {
       windowMs,
       limit: threshold as number,
       nowMs,
+      throttleKey: throttleKey as string,
+      throttleValue: throttleValue ? String(throttleValue) : undefined,
     });
 
     Logger.debug(
