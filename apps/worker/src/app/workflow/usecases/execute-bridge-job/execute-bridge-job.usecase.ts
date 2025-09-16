@@ -305,25 +305,37 @@ export class ExecuteBridgeJob {
         }
       }
       case 'throttle': {
-        // Return throttle result based on job execution status
-        // The actual throttling logic determines if the job was throttled
-        const wasThrottled = job.status === JobStatusEnum.SKIPPED;
+        const stepOutput = job.stepOutput as
+          | {
+              throttled: boolean;
+              executionCount: number;
+              threshold: number;
+              windowStart: string;
+            }
+          | undefined;
+
+        if (!stepOutput) {
+          return {
+            throttled: false,
+          } satisfies ThrottleResult;
+        }
 
         return {
-          throttled: wasThrottled,
-          executionCount: 1, // TODO: This should be calculated based on actual throttle window logic
-          threshold: (job.step?.controlVariables?.threshold as number) || 1,
-          windowStart: job.createdAt,
+          throttled: stepOutput.throttled,
+          executionCount: stepOutput.executionCount,
+          threshold: stepOutput.threshold,
+          windowStart: stepOutput.windowStart,
         } satisfies ThrottleResult;
       }
-      default: {
+      default:
         return {};
-      }
     }
   }
 
   @Instrument()
-  private async mapState(job: JobEntity) {
+  private;
+  async;
+  async mapState(job: JobEntity) {
     const output = await this.mapOutput(job);
 
     return {
