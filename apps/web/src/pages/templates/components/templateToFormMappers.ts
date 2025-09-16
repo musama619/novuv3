@@ -154,7 +154,7 @@ const mapToDelayFormStep = (item: INotificationTemplateStep | IStepVariant): IFo
     };
   }
 
-  if (metadata.type === DelayTypeEnum.REGULAR) {
+  if ('type' in metadata && metadata.type === DelayTypeEnum.REGULAR) {
     return {
       ...rest,
       variants,
@@ -169,7 +169,7 @@ const mapToDelayFormStep = (item: INotificationTemplateStep | IStepVariant): IFo
     };
   }
 
-  if (metadata.type === DelayTypeEnum.SCHEDULED) {
+  if ('type' in metadata && metadata.type === DelayTypeEnum.SCHEDULED) {
     return {
       ...rest,
       variants,
