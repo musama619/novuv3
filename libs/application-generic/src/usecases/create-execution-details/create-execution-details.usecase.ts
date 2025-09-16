@@ -18,13 +18,25 @@ const mapDetailToEventType = {
   [DetailEnum.STEP_FILTERED_BY_SUBSCRIBER_GLOBAL_PREFERENCES]: 'step_filtered',
   [DetailEnum.STEP_FILTERED_BY_WORKFLOW_RESOURCE_PREFERENCES]: 'step_filtered',
   [DetailEnum.STEP_FILTERED_BY_USER_WORKFLOW_PREFERENCES]: 'step_filtered',
-  [DetailEnum.FILTER_STEPS]: 'step_filtered',
   [DetailEnum.PROCESSING_STEP_FILTER]: 'step_filter_processing',
   [DetailEnum.PROCESSING_STEP_FILTER_ERROR]: 'step_filter_failed',
 
   // Message events
   [DetailEnum.MESSAGE_CREATED]: 'message_created',
   [DetailEnum.MESSAGE_SENT]: 'message_sent',
+  [DetailEnum.MESSAGE_SEEN]: 'message_seen',
+  [DetailEnum.MESSAGE_READ]: 'message_read',
+  [DetailEnum.MESSAGE_CLICKED]: 'message_clicked',
+  [DetailEnum.MESSAGE_DELIVERED]: 'message_delivered',
+  [DetailEnum.MESSAGE_REJECTED]: 'message_rejected',
+  [DetailEnum.MESSAGE_BLOCKED]: 'message_blocked',
+  [DetailEnum.MESSAGE_SPAM]: 'message_spam',
+  [DetailEnum.MESSAGE_BOUNCED]: 'message_bounced',
+  [DetailEnum.MESSAGE_DROPPED]: 'message_dropped',
+  [DetailEnum.MESSAGE_DEFERRED]: 'message_deferred',
+  [DetailEnum.MESSAGE_UNSUBSCRIBED]: 'message_unsubscribed',
+  [DetailEnum.MESSAGE_DELAYED]: 'message_delayed',
+  [DetailEnum.MESSAGE_COMPLAINT]: 'message_complaint',
   [DetailEnum.MESSAGE_SNOOZED]: 'message_snoozed',
   [DetailEnum.MESSAGE_UNSNOOZED]: 'message_unsnoozed',
   [DetailEnum.MESSAGE_UNSNOOZE_FAILED]: 'message_unsnooze_failed',
@@ -99,6 +111,10 @@ const mapDetailToEventType = {
   [DetailEnum.REPLY_CALLBACK_NOT_CONFIGURATION]: 'reply_callback_misconfigured',
   [DetailEnum.REPLY_CALLBACK_MISSING_MX_RECORD_CONFIGURATION]: 'reply_mx_record_missing',
   [DetailEnum.REPLY_CALLBACK_MISSING_MX_ROUTE_DOMAIN_CONFIGURATION]: 'reply_mx_domain_missing',
+
+  // Skipped step events
+  [DetailEnum.SKIPPED_STEP_BY_CONDITIONS]: 'step_skipped',
+  [DetailEnum.SKIPPED_STEP_OUTSIDE_OF_THE_SCHEDULE]: 'step_skipped_outside_of_the_schedule',
 } satisfies Record<DetailEnum, EventType>;
 
 @Injectable()

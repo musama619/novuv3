@@ -764,7 +764,8 @@
     "unifonic",
     "smsmode",
     "BLKTM",
-    "Novuand"
+    "Novuand",
+    "kobalte"
   ],
   "flagWords": [],
   "patterns": [

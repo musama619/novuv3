@@ -2,6 +2,7 @@ import { NovuError } from './utils/errors';
 
 export type { FiltersCountResponse, ListNotificationsResponse, Notification } from './notifications';
 export type { Preference } from './preferences/preference';
+export type { Schedule } from './preferences/schedule';
 export type { NovuError } from './utils/errors';
 
 declare global {
@@ -178,12 +179,41 @@ export type PaginatedResponse<T = unknown> = {
   page: number;
 };
 
+export type TimeRange = {
+  start: string;
+  end: string;
+};
+
+export type DaySchedule = {
+  isEnabled: boolean;
+  hours?: Array<TimeRange>;
+};
+
+export type WeeklySchedule = {
+  monday?: DaySchedule;
+  tuesday?: DaySchedule;
+  wednesday?: DaySchedule;
+  thursday?: DaySchedule;
+  friday?: DaySchedule;
+  saturday?: DaySchedule;
+  sunday?: DaySchedule;
+};
+
+export type DefaultSchedule = {
+  isEnabled?: boolean;
+  weeklySchedule?: WeeklySchedule;
+};
+
 export type PreferencesResponse = {
   level: PreferenceLevel;
   enabled: boolean;
   channels: ChannelPreference;
   overrides?: IPreferenceOverride[];
   workflow?: Workflow;
+  schedule?: {
+    isEnabled: boolean;
+    weeklySchedule?: WeeklySchedule;
+  };
 };
 
 export enum PreferenceOverrideSourceEnum {
@@ -216,6 +246,7 @@ export type StandardNovuOptions = {
   apiUrl?: string;
   socketUrl?: string;
   useCache?: boolean;
+  defaultSchedule?: DefaultSchedule;
 } & (
   | {
       // TODO: Backward compatibility support - remove in future versions (see NV-5801)

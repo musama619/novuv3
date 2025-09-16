@@ -163,7 +163,15 @@ export class SendgridEmailProvider extends BaseProvider implements IEmailProvide
     return [(body as any).id];
   }
 
-  verifySignature(rawBody: any, headers: Record<string, string>): { success: boolean; message?: string } {
+  verifySignature({
+    rawBody,
+    headers = {},
+    body: _body,
+  }: {
+    rawBody: any;
+    headers?: Record<string, string>;
+    body?: Record<string, unknown>;
+  }): { success: boolean; message?: string } {
     try {
       const signature = this.getHeaderValue(headers, 'x-twilio-email-event-webhook-signature');
       const timestamp = this.getHeaderValue(headers, 'x-twilio-email-event-webhook-timestamp');
@@ -210,9 +218,12 @@ export class SendgridEmailProvider extends BaseProvider implements IEmailProvide
           enabled: true,
           delivery_logs: true,
           engagement_data: true,
-          filters: {
-            event: ['delivered', 'bounce', 'click', 'open', 'dropped', 'spam_report', 'unsubscribe', 'processed'],
-          },
+          friendly_name: 'Novu Inbound Webhook',
+          open: true,
+          click: true,
+          bounce: true,
+          dropped: true,
+          delivered: true,
         },
       });
 

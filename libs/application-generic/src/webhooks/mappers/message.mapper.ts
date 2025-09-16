@@ -1,13 +1,44 @@
 import { MessageEntity } from '@novu/dal';
+import { ChannelData } from '@novu/stateless';
 import { MessageWebhookResponseDto } from '../dtos';
 
 export const messageWebhookMapper = (
-  message: MessageEntity,
+  message: Pick<
+    MessageEntity,
+    | '_id'
+    | '_templateId'
+    | '_environmentId'
+    | '_organizationId'
+    | '_notificationId'
+    | 'actorSubscriber'
+    | 'templateIdentifier'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'archivedAt'
+    | 'archived'
+    | 'transactionId'
+    | 'channel'
+    | 'seen'
+    | 'read'
+    | 'snoozedUntil'
+    | 'deliveredAt'
+    | 'providerId'
+    | 'lastSeenDate'
+    | 'firstSeenDate'
+    | 'lastReadDate'
+    | 'status'
+    | 'errorId'
+    | 'errorText'
+  >,
   subscriberId: string,
   context?: {
     providerResponseId?: string;
     deviceToken?: string;
+    /**
+     * @deprecated use channelData instead
+     */
     webhookUrl?: string;
+    channelData?: ChannelData;
   }
 ): MessageWebhookResponseDto => {
   return {
@@ -38,6 +69,7 @@ export const messageWebhookMapper = (
     errorText: message.errorText,
     deviceToken: context?.deviceToken,
     webhookUrl: context?.webhookUrl,
+    channelData: context?.channelData,
     providerResponseId: context?.providerResponseId,
   };
 };
