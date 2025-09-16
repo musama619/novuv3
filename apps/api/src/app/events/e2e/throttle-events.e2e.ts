@@ -335,12 +335,6 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
       channel: StepTypeEnum.IN_APP,
     });
 
-    console.log('Messages count:', messages?.length);
-    console.log(
-      'Message contents:',
-      messages.map((m) => m.content)
-    );
-
     // Based on the throttleKey logic, we should have messages for both users
     // since they have different throttleKey values (user1, user2)
     expect(messages?.length).to.equal(2);
