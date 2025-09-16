@@ -65,6 +65,7 @@ export const traceLogSchema = new ClickhouseSchema(schemaDefinition, clickhouseS
 export type EventType =
   | 'message_seen'
   | 'message_unseen'
+  | 'message_clicked'
   | 'message_read'
   | 'message_unread'
   | 'message_archived'
@@ -73,6 +74,17 @@ export type EventType =
   | 'message_unsnoozed'
   | 'message_created'
   | 'message_sent'
+  | 'message_spam'
+  | 'message_bounced'
+  | 'message_dropped'
+  | 'message_deferred'
+  | 'message_unsubscribed'
+  | 'message_delayed'
+  | 'message_deleted'
+  | 'message_complaint'
+  | 'message_delivered'
+  | 'message_rejected'
+  | 'message_blocked'
   | 'message_snoozed'
   | 'message_unsnoozed'
   | 'message_unsnooze_failed'
@@ -145,7 +157,9 @@ export type EventType =
   | 'workflow_actor_processing_started'
   | 'workflow_actor_processing_failed'
   | 'workflow_actor_processing_completed'
-  | 'workflow_execution_failed';
+  | 'workflow_execution_failed'
+  | 'step_skipped'
+  | 'step_skipped_outside_of_the_schedule';
 
 export type EntityType = 'request' | 'step_run';
 

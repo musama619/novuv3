@@ -256,6 +256,30 @@ export function mapEventTypeToTitle(eventType: EventType): string {
       return 'Message sending started';
     case 'message_severity_overridden':
       return 'Severity for the message was overridden';
+    case 'message_clicked':
+      return 'Message clicked';
+    case 'message_spam':
+      return 'Message spam';
+    case 'message_bounced':
+      return 'Message bounced';
+    case 'message_dropped':
+      return 'Message dropped';
+    case 'message_deferred':
+      return 'Message deferred';
+    case 'message_unsubscribed':
+      return 'Message unsubscribed';
+    case 'message_delayed':
+      return 'Message delayed';
+    case 'message_deleted':
+      return 'Message deleted';
+    case 'message_complaint':
+      return 'Message complaint';
+    case 'message_delivered':
+      return 'Message delivered';
+    case 'message_rejected':
+      return 'Message rejected';
+    case 'message_blocked':
+      return 'Message blocked';
 
     // Subscriber events
     case 'subscriber_integration_missing':
@@ -410,6 +434,12 @@ export function mapEventTypeToTitle(eventType: EventType): string {
     // Topic events
     case 'topic_not_found':
       return 'Topic not found';
+
+    // Step skipped events
+    case 'step_skipped':
+      return 'Step skipped';
+    case 'step_skipped_outside_of_the_schedule':
+      return "The step was skipped as it fell outside the subscriber's schedule";
 
     default: {
       // Exhaustive check - this will cause a compile error if we miss any TraceEvent cases

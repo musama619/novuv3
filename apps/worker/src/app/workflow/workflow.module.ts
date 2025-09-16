@@ -13,6 +13,7 @@ import {
   GetNovuLayout,
   GetNovuProviderCredentials,
   GetPreferences,
+  GetSubscriberSchedule,
   GetSubscriberTemplatePreference,
   GetTopicSubscribersUseCase,
   NormalizeVariables,
@@ -28,6 +29,8 @@ import {
   WorkflowRunService,
 } from '@novu/application-generic';
 import {
+  ChannelConnectionRepository,
+  ChannelEndpointRepository,
   CommunityOrganizationRepository,
   CommunityUserRepository,
   JobRepository,
@@ -87,7 +90,14 @@ const enterpriseImports = (): Array<Type | DynamicModule | Promise<DynamicModule
   return modules;
 };
 
-const REPOSITORIES = [JobRepository, CommunityOrganizationRepository, PreferencesRepository, CommunityUserRepository];
+const REPOSITORIES = [
+  JobRepository,
+  CommunityOrganizationRepository,
+  PreferencesRepository,
+  CommunityUserRepository,
+  ChannelEndpointRepository,
+  ChannelConnectionRepository,
+];
 
 const webhookProvider: Provider = {
   provide: SendWebhookMessage,
@@ -175,6 +185,7 @@ const USE_CASES = [
   ExecuteBridgeJob,
   GetPreferences,
   WorkflowRunService,
+  GetSubscriberSchedule,
 ];
 
 const PROVIDERS: Provider[] = [];

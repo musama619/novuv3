@@ -1,4 +1,5 @@
 import {
+  GetSubscriberSchedule,
   GetSubscriberTemplatePreference,
   GetWorkflowByIdsUseCase,
   MessageInteractionService,
@@ -12,6 +13,9 @@ import { ParseEventRequest } from '../../events/usecases/parse-event-request';
 import { VerifyPayload } from '../../events/usecases/verify-payload';
 import { GetSubscriberGlobalPreference } from '../../subscribers/usecases/get-subscriber-global-preference';
 import { BulkUpdatePreferences } from './bulk-update-preferences/bulk-update-preferences.usecase';
+import { DeleteAllNotifications } from './delete-all-notifications/delete-all-notifications.usecase';
+import { DeleteManyNotifications } from './delete-many-notifications/delete-many-notifications.usecase';
+import { DeleteNotification } from './delete-notification/delete-notification.usecase';
 import { GetInboxPreferences } from './get-inbox-preferences/get-inbox-preferences.usecase';
 import { GetNotifications } from './get-notifications/get-notifications.usecase';
 import { MarkManyNotificationsAs } from './mark-many-notifications-as/mark-many-notifications-as.usecase';
@@ -42,6 +46,9 @@ export const USE_CASES = [
   BulkUpdatePreferences,
   SnoozeNotification,
   UnsnoozeNotification,
+  DeleteNotification,
+  DeleteManyNotifications,
+  DeleteAllNotifications,
   GenerateUniqueApiKey,
   CommunityUserRepository,
   UpsertControlValuesUseCase,
@@ -50,4 +57,5 @@ export const USE_CASES = [
   StorageHelperService,
   MessageInteractionService,
   WorkflowRunService,
+  GetSubscriberSchedule,
 ];
