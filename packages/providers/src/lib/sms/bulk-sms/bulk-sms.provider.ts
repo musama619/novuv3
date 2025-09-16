@@ -32,7 +32,9 @@ export class BulkSmsProvider extends BaseProvider implements ISmsProvider {
       // this userSuppliedId helps bulk-sms to identify the message source as Novuand helps in debugging
       userSuppliedId: 'BLKTM.NOVU.01.00.00',
     });
+
     const url = this.DEFAULT_BASE_URL;
+
     const encodedToken = Buffer.from(this.config.apiToken).toString('base64');
     const response = await axios.create().post(url, JSON.stringify(payload.body), {
       headers: {
@@ -48,14 +50,14 @@ export class BulkSmsProvider extends BaseProvider implements ISmsProvider {
     };
   }
 
-  async createFormField(senderId: string | null) {
+  createFormField(senderId: string | null) {
     // check if senderId is null or empty string
     if (!senderId || senderId.trim() === '') {
       return null;
     }
 
     // check if senderId string contains only numbers
-    if (!/^\d+$/.test(senderId)) {
+    if (/^\d+$/.test(senderId)) {
       return {
         type: 'INTERNATIONAL',
         address: senderId,
