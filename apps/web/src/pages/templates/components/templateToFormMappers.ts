@@ -79,7 +79,7 @@ const mapToDigestFormStep = (item: INotificationTemplateStep | IStepVariant): IF
     };
   }
 
-  if (metadata.type === DigestTypeEnum.BACKOFF || metadata.type === DigestTypeEnum.REGULAR) {
+  if ('type' in metadata && (metadata.type === DigestTypeEnum.BACKOFF || metadata.type === DigestTypeEnum.REGULAR)) {
     return {
       ...rest,
       variants,
@@ -98,7 +98,7 @@ const mapToDigestFormStep = (item: INotificationTemplateStep | IStepVariant): IF
     };
   }
 
-  if (metadata.type === DigestTypeEnum.TIMED) {
+  if ('type' in metadata && metadata.type === DigestTypeEnum.TIMED) {
     return {
       ...rest,
       variants,
