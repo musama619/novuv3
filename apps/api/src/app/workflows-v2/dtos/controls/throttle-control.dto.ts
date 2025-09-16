@@ -1,16 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ThrottleTypeEnum, TimeUnitEnum } from '@novu/shared';
+import { TimeUnitEnum } from '@novu/shared';
 import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { SkipControlDto } from './skip.dto';
 
 export class ThrottleControlDto extends SkipControlDto {
-  @ApiProperty({
-    description: 'Type of the throttle step.',
-    enum: [ThrottleTypeEnum.THROTTLE],
-    default: ThrottleTypeEnum.THROTTLE,
-  })
-  @IsEnum([ThrottleTypeEnum.THROTTLE])
-  type: ThrottleTypeEnum.THROTTLE;
   @ApiProperty({
     description: 'The duration of the throttle window.',
     type: Number,

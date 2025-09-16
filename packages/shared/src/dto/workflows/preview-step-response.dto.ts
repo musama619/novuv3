@@ -64,7 +64,6 @@ export class DelayRenderOutput extends RenderOutput {
 }
 
 export class ThrottleRenderOutput extends RenderOutput {
-  type: 'throttle';
   window: number;
   unit: TimeUnitEnum;
   threshold?: number;

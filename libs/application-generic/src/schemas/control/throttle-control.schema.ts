@@ -7,7 +7,6 @@ import { defaultOptions, skipStepUiSchema, skipZodSchema } from './shared';
 export const throttleControlZodSchema = z
   .object({
     skip: skipZodSchema,
-    type: z.enum(['throttle']),
     window: z.number().min(1),
     unit: z.nativeEnum(TimeUnitEnum),
     threshold: z.number().min(1).optional(),
@@ -38,10 +37,6 @@ export const throttleUiSchema: UiSchema = {
     throttleKey: {
       component: UiComponentEnum.THROTTLE_KEY,
       placeholder: '',
-    },
-    type: {
-      component: UiComponentEnum.THROTTLE_TYPE,
-      placeholder: 'throttle',
     },
   },
 };

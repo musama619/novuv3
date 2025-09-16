@@ -9,11 +9,9 @@ export class ThrottleOutputRendererUsecase {
   execute(renderCommand: RenderCommand): ThrottleRenderOutput {
     const { skip: _skip, ...outputControls } = renderCommand.controlValues ?? {};
 
-    // Return the throttle controls/output - this matches the output schema
     return {
-      type: 'throttle',
-      window: outputControls.window || 1,
-      unit: outputControls.unit || 'hours',
+      window: outputControls.window,
+      unit: outputControls.unit,
       threshold: outputControls.threshold,
       throttleKey: outputControls.throttleKey,
     } as ThrottleRenderOutput;

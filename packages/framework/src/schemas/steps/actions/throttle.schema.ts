@@ -4,10 +4,6 @@ export const throttleActionSchemas = {
   output: {
     type: 'object',
     properties: {
-      type: {
-        enum: ['throttle'] as const,
-        default: 'throttle',
-      },
       window: {
         type: 'number',
       },
@@ -22,7 +18,7 @@ export const throttleActionSchemas = {
         type: 'string',
       },
     },
-    required: ['type', 'window', 'unit'],
+    required: ['window', 'unit'],
     additionalProperties: false,
   } as const satisfies JsonSchema,
   result: {
