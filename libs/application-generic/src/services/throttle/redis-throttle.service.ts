@@ -201,18 +201,6 @@ export class RedisThrottleService {
         LOG_CONTEXT
       );
 
-      // Fallback: allow the request if Redis is unavailable
-      const fallbackAllow = process.env.THROTTLE_REDIS_FALLBACK_ALLOW !== 'false';
-      if (fallbackAllow) {
-        Logger.warn('Redis unavailable, allowing throttle slot as fallback', LOG_CONTEXT);
-        return {
-          granted: true,
-          count: 1,
-          ttlMs: params.windowMs,
-          windowStartMs,
-        };
-      }
-
       throw error;
     }
   }
