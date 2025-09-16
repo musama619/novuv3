@@ -52,6 +52,7 @@ export enum DetailEnum {
   PROCESSING_STEP_FILTER = 'Processing step filter',
   PROCESSING_STEP_FILTER_ERROR = 'Processing step filter failed',
   SKIPPED_STEP_BY_CONDITIONS = 'Step was skipped based on steps conditions',
+  SKIPPED_STEP_OUTSIDE_OF_THE_SCHEDULE = "The step was skipped as it fell outside the subscriber's schedule",
   DIGEST_TRIGGERED_EVENTS = 'Digest triggered events',
   STEP_FILTERED_BY_SUBSCRIBER_WORKFLOW_PREFERENCES = 'Step filtered by subscriber workflow preferences',
   STEP_FILTERED_BY_SUBSCRIBER_GLOBAL_PREFERENCES = 'Step filtered by subscriber global preferences',
@@ -71,4 +72,6 @@ export enum DetailEnum {
   MESSAGE_SEVERITY_OVERRIDDEN = 'Severity for the message was overridden',
   STEP_THROTTLED = 'Step was throttled due to rate limiting',
   THROTTLE_LIMIT_EXCEEDED = 'Throttle limit exceeded for the given window',
+  STEP_EXTENDED_TO_SCHEDULE = 'Step was extended to the next available time in the subscriber schedule',
+  SKIPPED_STEP_MAX_EXTENSIONS_REACHED = 'Step was executed due to maximum number of subscriber schedule extensions reached',
 }

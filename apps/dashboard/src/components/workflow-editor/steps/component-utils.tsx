@@ -21,6 +21,7 @@ import { DataObject } from './base/data-object';
 import { LayoutSelect } from './email/layout-select';
 import { useSaveForm } from './save-form-context';
 import { BypassSanitizationSwitch } from './shared/bypass-sanitization-switch';
+import { ExtendToSchedule } from './shared/extend-to-schedule';
 
 const EmailEditorSelectInternal = () => {
   const { isUpdatePatchPending } = useWorkflow();
@@ -120,6 +121,10 @@ export const getComponentByType = ({ component }: { component?: UiComponentEnum 
 
     case UiComponentEnum.LAYOUT_SELECT: {
       return <LayoutSelect />;
+    }
+
+    case UiComponentEnum.EXTEND_TO_SCHEDULE: {
+      return <ExtendToSchedule />;
     }
 
     default: {

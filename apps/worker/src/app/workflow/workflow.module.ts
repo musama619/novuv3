@@ -13,6 +13,7 @@ import {
   GetNovuLayout,
   GetNovuProviderCredentials,
   GetPreferences,
+  GetSubscriberSchedule,
   GetSubscriberTemplatePreference,
   GetTopicSubscribersUseCase,
   InMemoryProviderService,
@@ -188,6 +189,7 @@ const USE_CASES = [
   ExecuteBridgeJob,
   GetPreferences,
   WorkflowRunService,
+  GetSubscriberSchedule,
 ];
 
 const PROVIDERS: Provider[] = [RedisThrottleService];
