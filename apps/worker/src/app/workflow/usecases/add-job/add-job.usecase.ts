@@ -532,17 +532,6 @@ export class AddJob {
     // Extract throttle value from payload if throttleKey is provided (similar to digestKey logic)
     const throttleValue = throttleKey ? getNestedValue(job.payload, throttleKey as string) : undefined;
 
-    Logger.debug(
-      {
-        jobId: job._id,
-        throttleKey,
-        throttleValue,
-        payload: job.payload,
-      },
-      'Throttle key extraction',
-      LOG_CONTEXT
-    );
-
     const jobId = `${job._notificationId}:${job.step.stepId}`;
     const reservationResult = await this.redisThrottleService.reserveThrottleSlot({
       environmentId: command.environmentId,
