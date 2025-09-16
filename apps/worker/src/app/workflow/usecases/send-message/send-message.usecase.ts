@@ -36,6 +36,7 @@ import {
   ExecutionDetailsStatusEnum,
   FeatureFlagsKeysEnum,
   IDigestRegularMetadata,
+  IDigestTimedMetadata,
   IPreferenceChannels,
   PreferencesTypeEnum,
   ResourceTypeEnum,
@@ -309,16 +310,19 @@ export class SendMessage {
     });
 
     const { digest } = command.job;
-    let timedInfo: any = {};
+    let timedInfo: Record<string, unknown> = {};
 
-    if (digest && digest.type === DigestTypeEnum.TIMED && digest.timed) {
-      timedInfo = {
-        digestAtTime: digest.timed.atTime,
-        digestWeekDays: digest.timed.weekDays,
-        digestMonthDays: digest.timed.monthDays,
-        digestOrdinal: digest.timed.ordinal,
-        digestOrdinalValue: digest.timed.ordinalValue,
-      };
+    if (digest && 'type' in digest && digest.type === DigestTypeEnum.TIMED) {
+      const timedDigest = digest as IDigestTimedMetadata;
+      if (timedDigest.timed) {
+        timedInfo = {
+          digestAtTime: timedDigest.timed.atTime,
+          digestWeekDays: timedDigest.timed.weekDays,
+          digestMonthDays: timedDigest.timed.monthDays,
+          digestOrdinal: timedDigest.timed.ordinal,
+          digestOrdinalValue: timedDigest.timed.ordinalValue,
+        };
+      }
     }
 
     /**
@@ -334,11 +338,13 @@ export class SendMessage {
       provider: command.job?.providerId,
       delay: command.job?.delay,
       jobType: command.job?.type,
-      digestType: digest?.type,
+      digestType: digest && 'type' in digest ? digest.type : undefined,
       digestEventsCount: digest?.events?.length,
       digestUnit: digest && 'unit' in digest ? digest.unit : undefined,
       digestAmount: digest && 'amount' in digest ? digest.amount : undefined,
-      digestBackoff: digest?.type === DigestTypeEnum.BACKOFF || (digest as IDigestRegularMetadata)?.backoff === true,
+      digestBackoff:
+        (digest && 'type' in digest && digest.type === DigestTypeEnum.BACKOFF) ||
+        (digest as IDigestRegularMetadata)?.backoff === true,
       ...timedInfo,
       filterPassed: filterResult?.passed,
       preferencesPassed: preferredResult,
