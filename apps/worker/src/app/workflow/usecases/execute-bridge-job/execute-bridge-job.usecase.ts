@@ -305,14 +305,7 @@ export class ExecuteBridgeJob {
         }
       }
       case 'throttle': {
-        const stepOutput = job.stepOutput as
-          | {
-              throttled: boolean;
-              executionCount: number;
-              threshold: number;
-              windowStart: string;
-            }
-          | undefined;
+        const stepOutput = job.stepOutput as ThrottleResult | undefined;
 
         if (!stepOutput) {
           return {
@@ -333,9 +326,7 @@ export class ExecuteBridgeJob {
   }
 
   @Instrument()
-  private;
-  async;
-  async mapState(job: JobEntity) {
+  private async mapState(job: JobEntity) {
     const output = await this.mapOutput(job);
 
     return {
