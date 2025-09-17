@@ -220,7 +220,7 @@ export class WorkflowRunService {
     }
 
     // Priority 2: DELIVERED - If any message has been delivered (has deliveredAt) and no interaction found
-    const hasInAppMessage = messages.some((message) => message.deliveredAt?.length > 0);
+    const hasInAppMessage = messages.some((message) => !!message.deliveredAt);
     if (hasInAppMessage) {
       return { deliveryLifecycleStatus: DeliveryLifecycleStatus.DELIVERED };
     }
