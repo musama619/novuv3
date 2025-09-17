@@ -561,20 +561,6 @@ export class AddJob {
       ? `${job._subscriberId}:${job.step.stepId}:${throttleValue}`
       : `${job._subscriberId}:${job.step.stepId}`;
 
-    console.log({
-      environmentId: command.environmentId,
-      subscriberId: job._subscriberId,
-      workflowId: job._templateId,
-      stepId: job.step.stepId,
-      throttleJobId,
-      windowMs,
-      limit: threshold as number,
-      nowMs,
-      throttleKey: throttleKey as string,
-      throttleValue: throttleValue ? String(throttleValue) : undefined,
-      throttleType: type as 'fixed' | 'dynamic',
-    });
-
     const reservationResult = await this.redisThrottleService.reserveThrottleSlot({
       environmentId: command.environmentId,
       subscriberId: job._subscriberId,
