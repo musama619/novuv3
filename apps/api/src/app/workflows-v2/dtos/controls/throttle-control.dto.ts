@@ -3,6 +3,15 @@ import { TimeUnitEnum } from '@novu/shared';
 import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { SkipControlDto } from './skip.dto';
 
+// Throttle-specific time units (excluding seconds for performance reasons)
+const ThrottleTimeUnitEnum = {
+  MINUTES: TimeUnitEnum.MINUTES,
+  HOURS: TimeUnitEnum.HOURS,
+  DAYS: TimeUnitEnum.DAYS,
+} as const;
+
+type ThrottleTimeUnit = (typeof ThrottleTimeUnitEnum)[keyof typeof ThrottleTimeUnitEnum];
+
 export class ThrottleControlDto extends SkipControlDto {
   @ApiProperty({
     description: 'The duration of the throttle window.',
@@ -14,11 +23,11 @@ export class ThrottleControlDto extends SkipControlDto {
   window: number;
 
   @ApiProperty({
-    description: 'The unit of time for the throttle window.',
-    enum: TimeUnitEnum,
+    description: 'The unit of time for the throttle window. Supported units: minutes, hours, days.',
+    enum: ThrottleTimeUnitEnum,
   })
-  @IsEnum(TimeUnitEnum)
-  unit: TimeUnitEnum;
+  @IsEnum(ThrottleTimeUnitEnum)
+  unit: ThrottleTimeUnit;
 
   @ApiPropertyOptional({
     description: 'The maximum number of executions allowed within the window. Defaults to 1.',

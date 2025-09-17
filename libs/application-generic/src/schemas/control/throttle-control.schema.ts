@@ -4,11 +4,18 @@ import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { defaultOptions, skipStepUiSchema, skipZodSchema } from './shared';
 
+// Throttle-specific time units (excluding seconds for performance reasons)
+const ThrottleTimeUnitEnum = {
+  MINUTES: TimeUnitEnum.MINUTES,
+  HOURS: TimeUnitEnum.HOURS,
+  DAYS: TimeUnitEnum.DAYS,
+} as const;
+
 export const throttleControlZodSchema = z
   .object({
     skip: skipZodSchema,
     window: z.number().min(1),
-    unit: z.nativeEnum(TimeUnitEnum),
+    unit: z.nativeEnum(ThrottleTimeUnitEnum),
     threshold: z.number().min(1).optional(),
     throttleKey: z.string().optional(),
   })
@@ -28,7 +35,7 @@ export const throttleUiSchema: UiSchema = {
     },
     unit: {
       component: UiComponentEnum.THROTTLE_UNIT,
-      placeholder: TimeUnitEnum.HOURS,
+      placeholder: TimeUnitEnum.MINUTES,
     },
     threshold: {
       component: UiComponentEnum.THROTTLE_THRESHOLD,

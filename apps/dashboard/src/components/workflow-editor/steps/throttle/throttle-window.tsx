@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { AmountInput } from '@/components/amount-input';
 import { FormLabel } from '@/components/primitives/form/form';
 import { useSaveForm } from '@/components/workflow-editor/steps/save-form-context';
-import { TIME_UNIT_OPTIONS } from '@/components/workflow-editor/steps/time-units';
+import { THROTTLE_TIME_UNIT_OPTIONS } from '@/components/workflow-editor/steps/time-units';
 import { useWorkflow } from '@/components/workflow-editor/workflow-provider';
 
 const windowKey = 'window';
@@ -36,8 +36,8 @@ export const ThrottleWindow = () => {
       </FormLabel>
       <AmountInput
         fields={{ inputKey: `controlValues.${windowKey}`, selectKey: `controlValues.${unitKey}` }}
-        options={TIME_UNIT_OPTIONS}
-        defaultOption={TimeUnitEnum.HOURS}
+        options={THROTTLE_TIME_UNIT_OPTIONS}
+        defaultOption={TimeUnitEnum.MINUTES}
         onValueChange={() => saveForm()}
         min={minWindowValue}
       />

@@ -574,13 +574,20 @@ export class AddJob {
 
   private convertToMilliseconds(amount: number, unit: string): number {
     const unitMap: Record<string, number> = {
-      seconds: 1000,
       minutes: 60 * 1000,
       hours: 60 * 60 * 1000,
       days: 24 * 60 * 60 * 1000,
     };
 
-    return amount * (unitMap[unit] || unitMap.hours);
+    if (!unitMap[unit]) {
+      Logger.warn(
+        `Invalid throttle unit '${unit}', falling back to minutes. Supported units: minutes, hours, days`,
+        LOG_CONTEXT
+      );
+      return amount * unitMap.minutes;
+    }
+
+    return amount * unitMap[unit];
   }
 
   private mapBridgeTimedDigestAmount(bridgeResponse: ExecuteOutput | null, timezone?: string): number | null {
