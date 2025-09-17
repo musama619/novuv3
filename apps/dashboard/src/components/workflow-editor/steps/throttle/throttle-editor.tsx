@@ -13,19 +13,21 @@ export const ThrottleEditor = () => {
   }
 
   const {
-    ['window']: window,
+    ['type']: type,
+    ['amount']: amount,
     ['unit']: unit,
+    ['dynamicKey']: dynamicKey,
     ['threshold']: threshold,
     ['throttleKey']: throttleKey,
   } = uiSchema.properties ?? {};
 
   return (
     <div className="flex flex-col">
-      {window && unit && (
+      {(type || amount || unit || dynamicKey) && (
         <>
           <SidebarContent size="lg">
             {getComponentByType({
-              component: window.component,
+              component: type?.component || amount?.component || unit?.component || dynamicKey?.component,
             })}
           </SidebarContent>
           <Separator />

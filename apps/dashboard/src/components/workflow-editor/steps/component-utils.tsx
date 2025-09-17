@@ -92,8 +92,10 @@ export const getComponentByType = ({ component }: { component?: UiComponentEnum 
     case UiComponentEnum.DIGEST_CRON:
       return <DigestWindow />;
 
+    case UiComponentEnum.THROTTLE_TYPE:
     case UiComponentEnum.THROTTLE_WINDOW:
     case UiComponentEnum.THROTTLE_UNIT:
+    case UiComponentEnum.THROTTLE_DYNAMIC_KEY:
       return <ThrottleWindow />;
 
     case UiComponentEnum.THROTTLE_THRESHOLD:

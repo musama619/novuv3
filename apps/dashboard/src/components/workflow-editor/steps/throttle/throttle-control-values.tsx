@@ -4,8 +4,10 @@ import { SidebarContent } from '@/components/side-navigation/sidebar';
 import { getComponentByType } from '@/components/workflow-editor/steps/component-utils';
 import { useWorkflow } from '@/components/workflow-editor/workflow-provider';
 
-const windowKey = 'window';
+const typeKey = 'type';
+const amountKey = 'amount';
 const unitKey = 'unit';
+const dynamicKeyKey = 'dynamicKey';
 const thresholdKey = 'threshold';
 const throttleKeyKey = 'throttleKey';
 
@@ -18,17 +20,23 @@ export const ThrottleControlValues = () => {
   }
 
   const {
-    [windowKey]: window,
+    [typeKey]: type,
+    [amountKey]: amount,
     [unitKey]: unit,
+    [dynamicKeyKey]: dynamicKey,
     [thresholdKey]: threshold,
     [throttleKeyKey]: throttleKey,
   } = uiSchema.properties ?? {};
 
   return (
     <>
-      {window && unit && (
+      {(type || amount || unit || dynamicKey) && (
         <>
-          <SidebarContent>{getComponentByType({ component: window.component })}</SidebarContent>
+          <SidebarContent>
+            {getComponentByType({
+              component: type?.component || amount?.component || unit?.component || dynamicKey?.component,
+            })}
+          </SidebarContent>
           <Separator />
         </>
       )}

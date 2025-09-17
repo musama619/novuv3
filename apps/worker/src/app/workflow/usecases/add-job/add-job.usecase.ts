@@ -513,14 +513,41 @@ export class AddJob {
   ): Promise<{ shouldSkip: boolean; executionCount?: number; threshold?: number; windowStart?: string }> {
     // Get throttle configuration from bridge response or job step
     const throttleConfig = bridgeResponse?.outputs || {};
-    const { amount, unit, threshold = 1, throttleKey } = throttleConfig;
+    const { type = 'fixed', threshold = 1, throttleKey } = throttleConfig;
 
-    if (!amount || !unit) {
-      Logger.warn(`Throttle configuration missing amount or unit for job ${job._id}`, LOG_CONTEXT);
+    let windowMs: number;
+    let windowIdentifier: string;
+
+    if (type === 'fixed') {
+      const { amount, unit } = throttleConfig;
+      if (!amount || !unit) {
+        Logger.warn(`Fixed throttle configuration missing amount or unit for job ${job._id}`, LOG_CONTEXT);
+        return { shouldSkip: false };
+      }
+      windowMs = this.convertToMilliseconds(amount as number, unit as string);
+      windowIdentifier = `fixed:${amount}:${unit}`;
+    } else if (type === 'dynamic') {
+      const { dynamicKey } = throttleConfig;
+      if (!dynamicKey) {
+        Logger.warn(`Dynamic throttle configuration missing dynamicKey for job ${job._id}`, LOG_CONTEXT);
+        return { shouldSkip: false };
+      }
+
+      // Parse dynamic window value
+      const dynamicValue = this.parseDynamicThrottleValue(job, dynamicKey as string);
+      console.log('dynamicValue', dynamicValue);
+      if (!dynamicValue) {
+        Logger.warn(`Could not parse dynamic throttle value for job ${job._id}, key: ${dynamicKey}`, LOG_CONTEXT);
+        return { shouldSkip: false };
+      }
+
+      windowMs = dynamicValue.windowMs;
+      windowIdentifier = `dynamic:${dynamicValue.identifier}`;
+    } else {
+      Logger.warn(`Unknown throttle type '${type}' for job ${job._id}`, LOG_CONTEXT);
       return { shouldSkip: false };
     }
 
-    const windowMs = this.convertToMilliseconds(amount as number, unit as string);
     const nowMs = Date.now();
 
     if (!job.step.stepId) {
@@ -529,18 +556,38 @@ export class AddJob {
 
     const throttleValue = throttleKey ? getNestedValue(job.payload, throttleKey as string) : undefined;
 
-    const jobId = `${job._notificationId}:${job.step.stepId}`;
-    const reservationResult = await this.redisThrottleService.reserveThrottleSlot({
+    // For throttling, use a consistent identifier based on subscriber and step
+    // rather than the unique notification ID, so multiple triggers can be throttled together
+    const throttleJobId = throttleValue
+      ? `${job._subscriberId}:${job.step.stepId}:${throttleValue}`
+      : `${job._subscriberId}:${job.step.stepId}`;
+
+    console.log({
       environmentId: command.environmentId,
       subscriberId: job._subscriberId,
       workflowId: job._templateId,
       stepId: job.step.stepId,
-      jobId,
+      throttleJobId,
       windowMs,
       limit: threshold as number,
       nowMs,
       throttleKey: throttleKey as string,
       throttleValue: throttleValue ? String(throttleValue) : undefined,
+      throttleType: type as 'fixed' | 'dynamic',
+    });
+
+    const reservationResult = await this.redisThrottleService.reserveThrottleSlot({
+      environmentId: command.environmentId,
+      subscriberId: job._subscriberId,
+      workflowId: job._templateId,
+      stepId: job.step.stepId,
+      jobId: throttleJobId,
+      windowMs,
+      limit: threshold as number,
+      nowMs,
+      throttleKey: throttleKey as string,
+      throttleValue: throttleValue ? String(throttleValue) : undefined,
+      throttleType: type as 'fixed' | 'dynamic',
     });
 
     Logger.debug(
@@ -549,6 +596,8 @@ export class AddJob {
         reservationResult,
         threshold,
         windowMs,
+        windowIdentifier,
+        type,
       },
       'Redis throttle reservation result',
       LOG_CONTEXT
@@ -570,6 +619,61 @@ export class AddJob {
       threshold: threshold as number,
       windowStart: new Date(reservationResult.windowStartMs).toISOString(),
     };
+  }
+
+  private parseDynamicThrottleValue(
+    job: JobEntity,
+    dynamicKey: string
+  ): { windowMs: number; identifier: string } | null {
+    const keyPath = dynamicKey?.replace('payload.', '');
+    const value = getNestedValue(job.payload, keyPath);
+
+    if (!value) {
+      Logger.debug(`Dynamic throttle key '${dynamicKey}' not found in payload data`, LOG_CONTEXT);
+      return null;
+    }
+
+    // Handle ISO-8601 timestamp (future datetime)
+    if (typeof value === 'string' && this.isISO8601(value)) {
+      const targetTime = new Date(value).getTime();
+      const now = Date.now();
+
+      if (targetTime <= now) {
+        Logger.warn(`Dynamic throttle timestamp '${value}' is in the past`, LOG_CONTEXT);
+        return null;
+      }
+
+      return {
+        windowMs: targetTime - now,
+        identifier: value, // Use the timestamp as identifier
+      };
+    }
+
+    // Handle relative duration object
+    if (typeof value === 'object' && value !== null && 'unit' in value && 'amount' in value) {
+      const durationObj = value as { unit: string; amount: number };
+      const windowMs = this.convertToMilliseconds(durationObj.amount, durationObj.unit);
+
+      return {
+        windowMs,
+        identifier: `${durationObj.amount}:${durationObj.unit}`,
+      };
+    }
+
+    Logger.warn(`Dynamic throttle value '${JSON.stringify(value)}' is not a valid format`, LOG_CONTEXT);
+    return null;
+  }
+
+  private isISO8601(value: string): boolean {
+    // Basic ISO-8601 validation - allow flexible milliseconds (1-3 digits)
+    const iso8601Regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z?$/;
+    if (!iso8601Regex.test(value)) {
+      return false;
+    }
+
+    // Check if it's a valid date
+    const date = new Date(value);
+    return !Number.isNaN(date.getTime());
   }
 
   private convertToMilliseconds(amount: number, unit: string): number {

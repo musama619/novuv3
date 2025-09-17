@@ -54,6 +54,7 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
+            type: 'fixed',
             amount: 1,
             unit: 'minutes',
             threshold: 3,
@@ -120,6 +121,7 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
+            type: 'fixed',
             amount: 1,
             unit: 'minutes',
             threshold: 2,
@@ -197,6 +199,7 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
+            type: 'fixed',
             amount: 1,
             unit: 'minutes',
             threshold: 1,
@@ -278,6 +281,7 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
+            type: 'fixed',
             amount: 1,
             unit: 'minutes',
             threshold: 1,
@@ -344,6 +348,134 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
     expect(user2Messages?.length).to.equal(1);
   });
 
+  it('should throttle with dynamic ISO timestamp', async () => {
+    const futureTime = new Date(Date.now() + 2 * 60 * 1000).toISOString(); // 2 minutes in future
+
+    const workflowBody: CreateWorkflowDto = {
+      name: 'Test Dynamic Throttle ISO Workflow',
+      workflowId: 'test-dynamic-throttle-iso-workflow',
+      __source: WorkflowCreationSourceEnum.DASHBOARD,
+      steps: [
+        {
+          type: StepTypeEnum.THROTTLE,
+          name: 'Throttle Step',
+          controlValues: {
+            type: 'dynamic',
+            dynamicKey: 'payload.releaseTime',
+            threshold: 2,
+          },
+        },
+        {
+          type: StepTypeEnum.IN_APP,
+          name: 'In-App Message',
+          controlValues: {
+            body: 'Dynamic throttled by timestamp {{payload.customVar}}',
+          },
+        },
+      ],
+    };
+
+    const response = await session.testAgent.post('/v2/workflows').send(workflowBody);
+    const { workflow } = response.body.data;
+
+    // Trigger first event with dynamic timestamp
+    await triggerEvent(workflow.workflowId, {
+      customVar: 'test1',
+      releaseTime: futureTime,
+    });
+
+    // Trigger second event with same timestamp (should be throttled)
+    await triggerEvent(workflow.workflowId, {
+      customVar: 'test2',
+      releaseTime: futureTime,
+    });
+
+    await session.waitForJobCompletion(workflow._id);
+
+    const throttleJobs = await jobRepository.find({
+      _environmentId: session.environment._id,
+      _templateId: workflow._id,
+      type: StepTypeEnum.THROTTLE,
+    });
+
+    const completedThrottleJobs = throttleJobs.filter((job) => job.status === JobStatusEnum.COMPLETED);
+    const skippedThrottleJobs = throttleJobs.filter((job) => job.status === JobStatusEnum.SKIPPED);
+
+    expect(completedThrottleJobs?.length).to.equal(1);
+    expect(skippedThrottleJobs?.length).to.equal(1);
+
+    const messages = await messageRepository.find({
+      _environmentId: session.environment._id,
+      _subscriberId: subscriber._id,
+      channel: StepTypeEnum.IN_APP,
+    });
+
+    expect(messages?.length).to.equal(1);
+  });
+
+  it('should throttle with dynamic duration object', async () => {
+    const workflowBody: CreateWorkflowDto = {
+      name: 'Test Dynamic Throttle Duration Workflow',
+      workflowId: 'test-dynamic-throttle-duration-workflow',
+      __source: WorkflowCreationSourceEnum.DASHBOARD,
+      steps: [
+        {
+          type: StepTypeEnum.THROTTLE,
+          name: 'Throttle Step',
+          controlValues: {
+            type: 'dynamic',
+            dynamicKey: 'payload.throttleWindow',
+            threshold: 1,
+          },
+        },
+        {
+          type: StepTypeEnum.IN_APP,
+          name: 'In-App Message',
+          controlValues: {
+            body: 'Dynamic throttled by duration {{payload.customVar}}',
+          },
+        },
+      ],
+    };
+
+    const response = await session.testAgent.post('/v2/workflows').send(workflowBody);
+    const { workflow } = response.body.data;
+
+    // Trigger first event with duration object
+    await triggerEvent(workflow.workflowId, {
+      customVar: 'test1',
+      throttleWindow: { amount: 1, unit: 'minutes' },
+    });
+
+    // Trigger second event with same duration (should be throttled)
+    await triggerEvent(workflow.workflowId, {
+      customVar: 'test2',
+      throttleWindow: { amount: 1, unit: 'minutes' },
+    });
+
+    await session.waitForJobCompletion(workflow._id);
+
+    const throttleJobs = await jobRepository.find({
+      _environmentId: session.environment._id,
+      _templateId: workflow._id,
+      type: StepTypeEnum.THROTTLE,
+    });
+
+    const completedThrottleJobs = throttleJobs.filter((job) => job.status === JobStatusEnum.COMPLETED);
+    const skippedThrottleJobs = throttleJobs.filter((job) => job.status === JobStatusEnum.SKIPPED);
+
+    expect(completedThrottleJobs?.length).to.equal(1);
+    expect(skippedThrottleJobs?.length).to.equal(1);
+
+    const messages = await messageRepository.find({
+      _environmentId: session.environment._id,
+      _subscriberId: subscriber._id,
+      channel: StepTypeEnum.IN_APP,
+    });
+
+    expect(messages?.length).to.equal(1);
+  });
+
   it('should throttle with minute time units', async () => {
     const workflowBody: CreateWorkflowDto = {
       name: 'Test Throttle Minutes Workflow',
@@ -354,6 +486,7 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
+            type: 'fixed',
             amount: 1,
             unit: 'minutes',
             threshold: 2,
@@ -425,6 +558,7 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
+            type: 'fixed',
             amount: 1,
             unit: 'minutes',
             threshold: 1,

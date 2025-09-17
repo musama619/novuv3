@@ -4,21 +4,17 @@ export const throttleActionSchemas = {
   output: {
     type: 'object',
     properties: {
-      amount: {
-        type: 'number',
-      },
-      unit: {
-        type: 'string',
-        enum: ['minutes', 'hours', 'days'],
-      },
-      threshold: {
-        type: 'number',
-      },
-      throttleKey: {
-        type: 'string',
-      },
+      type: { type: 'string', enum: ['fixed', 'dynamic'] },
+      // Fixed throttle fields
+      amount: { type: 'number' },
+      unit: { type: 'string', enum: ['minutes', 'hours', 'days'] },
+      // Dynamic throttle fields
+      dynamicKey: { type: 'string' },
+      // Common fields
+      threshold: { type: 'number' },
+      throttleKey: { type: 'string' },
     },
-    required: ['amount', 'unit'],
+    required: ['type'],
     additionalProperties: false,
   } as const satisfies JsonSchema,
   result: {

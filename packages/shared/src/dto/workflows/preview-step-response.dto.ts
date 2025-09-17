@@ -63,12 +63,17 @@ export class DelayRenderOutput extends RenderOutput {
   unit: TimeUnitEnum;
 }
 
-export class ThrottleRenderOutput extends RenderOutput {
-  amount: number;
-  unit: 'minutes' | 'hours' | 'days';
+export type ThrottleRenderOutput = RenderOutput & {
+  type: 'fixed' | 'dynamic';
+  // Fixed throttle fields
+  amount?: number;
+  unit?: 'minutes' | 'hours' | 'days';
+  // Dynamic throttle fields
+  dynamicKey?: string;
+  // Common fields
   threshold?: number;
   throttleKey?: string;
-}
+};
 export enum TimeUnitEnum {
   SECONDS = 'seconds',
   MINUTES = 'minutes',

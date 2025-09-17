@@ -89,6 +89,18 @@ export class RedisThrottleService {
     return Math.floor(nowMs / windowMs) * windowMs;
   }
 
+  private hashToTimestamp(identifier: string): number {
+    // Create a simple hash of the identifier to generate a consistent timestamp
+    let hash = 0;
+    for (let i = 0; i < identifier.length; i++) {
+      const char = identifier.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    // Use the absolute hash value as a base timestamp (but keep it reasonable)
+    return Math.abs(hash) % 1000000000000; // Keep it within a reasonable range
+  }
+
   private computeTtlSeconds(windowStartMs: number, windowMs: number, nowMs: number): number {
     const expiryMs = windowStartMs + windowMs + this.ttlBufferMs;
     return Math.ceil((expiryMs - nowMs) / 1000);
@@ -156,7 +168,50 @@ export class RedisThrottleService {
   }
 
   async reserveThrottleSlot(params: IThrottleReservationParams): Promise<IThrottleReservationResult> {
-    const windowStartMs = this.computeWindowStart(params.nowMs, params.windowMs);
+    // For dynamic throttles, we need a consistent window identifier that doesn't change between triggers
+    // Use a combination of subscriber, step, and throttle value as the window identifier
+    // For fixed throttles, align to regular intervals (e.g., every hour on the hour)
+    let windowStartMs: number;
+
+    if (params.throttleType === 'dynamic') {
+      // For dynamic throttles, use the dynamic value itself as the window identifier
+      // This ensures all triggers with the same dynamic value share the same throttle window
+      const dynamicValue = params.throttleValue || 'default';
+      // Use a simple hash of the dynamic value to create a consistent window start
+      // This ensures the same dynamic value always maps to the same window
+      let hash = 0;
+      for (let i = 0; i < dynamicValue.length; i++) {
+        hash = (hash << 5) - hash + dynamicValue.charCodeAt(i);
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      // Use hash as offset from a base time to ensure positive TTL
+      const baseTime = Math.floor(params.nowMs / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000); // Start of today
+      windowStartMs = baseTime + (Math.abs(hash) % (24 * 60 * 60 * 1000)); // Hash within today
+
+      console.log('Dynamic throttle window calculation:', {
+        dynamicValue,
+        hash,
+        baseTime,
+        windowStartMs,
+        nowMs: params.nowMs,
+      });
+    } else {
+      windowStartMs = this.computeWindowStart(params.nowMs, params.windowMs);
+    }
+
+    console.log('Throttle type:', params.throttleType);
+    console.log('Window start calculation:', {
+      isDynamic: params.throttleType === 'dynamic',
+      nowMs: params.nowMs,
+      windowMs: params.windowMs,
+      computedWindowStart: this.computeWindowStart(params.nowMs, params.windowMs),
+      finalWindowStartMs: windowStartMs,
+      windowIdentifier:
+        params.throttleType === 'dynamic'
+          ? `${params.subscriberId}:${params.stepId}:${params.throttleValue || 'default'}`
+          : 'N/A (fixed)',
+    });
+
     const setKey = this.buildSetKey({
       environmentId: params.environmentId,
       subscriberId: params.subscriberId,
@@ -167,9 +222,18 @@ export class RedisThrottleService {
       throttleValue: params.throttleValue,
     });
 
+    console.log('Redis key:', setKey);
+
     const ttlSec = this.computeTtlSeconds(windowStartMs, params.windowMs, params.nowMs);
 
     try {
+      console.log('Executing Redis script with:', {
+        setKey,
+        limit: params.limit,
+        ttlSec,
+        jobId: params.jobId,
+      });
+
       const [granted, count, ttlSecRemaining] = await this.executeReserveScript(
         setKey,
         params.limit,
@@ -177,12 +241,16 @@ export class RedisThrottleService {
         params.jobId
       );
 
+      console.log('Redis script result:', { granted, count, ttlSecRemaining });
+
       const result: IThrottleReservationResult = {
         granted: granted === 1,
         count,
         ttlMs: ttlSecRemaining > 0 ? ttlSecRemaining * 1000 : 0,
         windowStartMs,
       };
+
+      console.log('Final throttle result:', result);
 
       Logger.debug(
         {

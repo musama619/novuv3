@@ -6,16 +6,20 @@ import { RenderCommand } from './render-command';
 export class ThrottleOutputRendererUsecase {
   @InstrumentUsecase()
   execute(renderCommand: RenderCommand): {
-    amount: number;
-    unit: 'minutes' | 'hours' | 'days';
+    type: 'fixed' | 'dynamic';
+    amount?: number;
+    unit?: 'minutes' | 'hours' | 'days';
+    dynamicKey?: string;
     threshold?: number;
     throttleKey?: string;
   } {
     const { skip: _skip, ...outputControls } = renderCommand.controlValues ?? {};
 
     return {
-      amount: outputControls.amount as number,
-      unit: outputControls.unit as 'minutes' | 'hours' | 'days',
+      type: (outputControls.type as 'fixed' | 'dynamic') || 'fixed',
+      amount: outputControls.amount as number | undefined,
+      unit: outputControls.unit as 'minutes' | 'hours' | 'days' | undefined,
+      dynamicKey: outputControls.dynamicKey as string | undefined,
       threshold: outputControls.threshold as number | undefined,
       throttleKey: outputControls.throttleKey as string | undefined,
     };

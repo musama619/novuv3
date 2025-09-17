@@ -9,6 +9,7 @@ export interface IThrottleReservationParams {
   nowMs: number;
   throttleKey?: string;
   throttleValue?: string;
+  throttleType?: 'fixed' | 'dynamic';
 }
 
 export interface IThrottleReservationResult {

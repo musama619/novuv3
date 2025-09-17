@@ -124,8 +124,13 @@ export interface IDelayScheduledMetadata {
 }
 
 export interface IThrottleMetadata {
-  amount: number;
-  unit: DigestUnitEnum;
+  type?: 'fixed' | 'dynamic';
+  // Fixed throttle fields
+  amount?: number;
+  unit?: DigestUnitEnum;
+  // Dynamic throttle fields
+  dynamicKey?: string;
+  // Common fields
   threshold?: number;
   throttleKey?: string;
 }

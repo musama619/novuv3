@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TimeUnitEnum } from '@novu/shared';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
 import { SkipControlDto } from './skip.dto';
 
 // Throttle-specific time units (excluding seconds for performance reasons)
@@ -10,24 +10,52 @@ const ThrottleTimeUnitEnum = {
   DAYS: TimeUnitEnum.DAYS,
 } as const;
 
+// Throttle type enum
+const ThrottleTypeEnum = {
+  FIXED: 'fixed',
+  DYNAMIC: 'dynamic',
+} as const;
+
 type ThrottleTimeUnit = (typeof ThrottleTimeUnitEnum)[keyof typeof ThrottleTimeUnitEnum];
+type ThrottleType = (typeof ThrottleTypeEnum)[keyof typeof ThrottleTypeEnum];
 
 export class ThrottleControlDto extends SkipControlDto {
   @ApiProperty({
-    description: 'The amount of time for the throttle window.',
+    description: 'The type of throttle window.',
+    enum: ThrottleTypeEnum,
+    default: 'fixed',
+  })
+  @IsEnum(ThrottleTypeEnum)
+  @IsOptional()
+  type?: ThrottleType;
+
+  @ApiPropertyOptional({
+    description: 'The amount of time for the throttle window (required for fixed type).',
     type: Number,
     minimum: 1,
   })
   @IsNumber()
   @Min(1)
-  amount: number;
+  @IsOptional()
+  amount?: number;
 
-  @ApiProperty({
-    description: 'The unit of time for the throttle window. Supported units: minutes, hours, days.',
+  @ApiPropertyOptional({
+    description: 'The unit of time for the throttle window (required for fixed type).',
     enum: ThrottleTimeUnitEnum,
   })
   @IsEnum(ThrottleTimeUnitEnum)
-  unit: ThrottleTimeUnit;
+  @IsOptional()
+  unit?: ThrottleTimeUnit;
+
+  @ApiPropertyOptional({
+    description: 'Key path to retrieve dynamic window value (required for dynamic type).',
+    type: String,
+    example: 'payload.timestamp',
+  })
+  @IsString()
+  @MinLength(1)
+  @IsOptional()
+  dynamicKey?: string;
 
   @ApiPropertyOptional({
     description: 'The maximum number of executions allowed within the window. Defaults to 1.',
