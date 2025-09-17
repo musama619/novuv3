@@ -535,7 +535,6 @@ export class AddJob {
 
       // Parse dynamic window value
       const dynamicValue = this.parseDynamicThrottleValue(job, dynamicKey as string);
-      console.log('dynamicValue', dynamicValue);
       if (!dynamicValue) {
         Logger.warn(`Could not parse dynamic throttle value for job ${job._id}, key: ${dynamicKey}`, LOG_CONTEXT);
         return { shouldSkip: false };
