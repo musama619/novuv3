@@ -6,7 +6,7 @@ import { useSaveForm } from '@/components/workflow-editor/steps/save-form-contex
 import { THROTTLE_TIME_UNIT_OPTIONS } from '@/components/workflow-editor/steps/time-units';
 import { useWorkflow } from '@/components/workflow-editor/workflow-provider';
 
-const windowKey = 'window';
+const windowKey = 'amount';
 const unitKey = 'unit';
 
 export const ThrottleWindow = () => {
@@ -16,7 +16,7 @@ export const ThrottleWindow = () => {
 
   const minWindowValue = useMemo(() => {
     if (typeof dataSchema === 'object') {
-      const windowField = dataSchema.properties?.window;
+      const windowField = dataSchema.properties?.amount;
 
       if (typeof windowField === 'object' && windowField.type === 'number') {
         return windowField.minimum ?? 1;

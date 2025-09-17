@@ -14,7 +14,7 @@ const ThrottleTimeUnitEnum = {
 export const throttleControlZodSchema = z
   .object({
     skip: skipZodSchema,
-    window: z.number().min(1),
+    amount: z.number().min(1),
     unit: z.nativeEnum(ThrottleTimeUnitEnum),
     threshold: z.number().min(1).optional(),
     throttleKey: z.string().optional(),
@@ -29,7 +29,7 @@ export const throttleUiSchema: UiSchema = {
   group: UiSchemaGroupEnum.THROTTLE,
   properties: {
     skip: skipStepUiSchema.properties.skip,
-    window: {
+    amount: {
       component: UiComponentEnum.THROTTLE_WINDOW,
       placeholder: null,
     },

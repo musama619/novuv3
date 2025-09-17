@@ -513,14 +513,14 @@ export class AddJob {
   ): Promise<{ shouldSkip: boolean; executionCount?: number; threshold?: number; windowStart?: string }> {
     // Get throttle configuration from bridge response or job step
     const throttleConfig = bridgeResponse?.outputs || {};
-    const { window, unit, threshold = 1, throttleKey } = throttleConfig;
+    const { amount, unit, threshold = 1, throttleKey } = throttleConfig;
 
-    if (!window || !unit) {
-      Logger.warn(`Throttle configuration missing window or unit for job ${job._id}`, LOG_CONTEXT);
+    if (!amount || !unit) {
+      Logger.warn(`Throttle configuration missing amount or unit for job ${job._id}`, LOG_CONTEXT);
       return { shouldSkip: false };
     }
 
-    const windowMs = this.convertToMilliseconds(window as number, unit as string);
+    const windowMs = this.convertToMilliseconds(amount as number, unit as string);
     const nowMs = Date.now();
 
     if (!job.step.stepId) {

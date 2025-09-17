@@ -4,12 +4,12 @@ export const throttleActionSchemas = {
   output: {
     type: 'object',
     properties: {
-      window: {
+      amount: {
         type: 'number',
       },
       unit: {
         type: 'string',
-        enum: ['seconds', 'minutes', 'hours', 'days', 'weeks', 'months'],
+        enum: ['minutes', 'hours', 'days'],
       },
       threshold: {
         type: 'number',
@@ -18,7 +18,7 @@ export const throttleActionSchemas = {
         type: 'string',
       },
     },
-    required: ['window', 'unit'],
+    required: ['amount', 'unit'],
     additionalProperties: false,
   } as const satisfies JsonSchema,
   result: {

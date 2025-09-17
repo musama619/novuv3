@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CommunityOrganizationRepository, OrganizationEntity } from '@novu/dal';
 import {
   ApiServiceLevelEnum,
+  castUnitToDigestUnitEnum,
   DigestUnitEnum,
   FeatureFlagsKeysEnum,
   FeatureNameEnum,
@@ -41,8 +42,12 @@ export class TierRestrictionsValidateUsecase {
       throw new Error(`Organization not found: ${command.organizationId}`);
     }
 
-    if (isCronExpression(command.cron)) {
-      const maxDelayMs = await this.getMaxDelayInMs(command, organization, stepType);
+    if (stepType !== StepTypeEnum.THROTTLE && isCronExpression(command.cron)) {
+      const maxDelayMs = await this.getMaxDelayInMs(
+        command,
+        organization,
+        stepType as StepTypeEnum.DELAY | StepTypeEnum.DIGEST
+      );
 
       if (this.isCronDeltaDeferDurationExceededTier(command.cron, maxDelayMs)) {
         return [
@@ -59,14 +64,18 @@ export class TierRestrictionsValidateUsecase {
       return [];
     }
 
-    if (isRegularDeferAction(command)) {
+    if (stepType !== StepTypeEnum.THROTTLE && isRegularDeferAction(command)) {
       const deferDurationMs = calculateDeferDuration(command);
 
       if (deferDurationMs < MIN_VALIDATION_LIMITS.DEFER_DURATION_MS) {
         return [];
       }
 
-      const maxDelayMs = await this.getMaxDelayInMs(command, organization, stepType);
+      const maxDelayMs = await this.getMaxDelayInMs(
+        command,
+        organization,
+        stepType as StepTypeEnum.DELAY | StepTypeEnum.DIGEST
+      );
 
       const amountIssue = buildIssue(deferDurationMs, maxDelayMs, ErrorEnum.TIER_LIMIT_EXCEEDED, 'amount');
       const unitIssue = buildIssue(deferDurationMs, maxDelayMs, ErrorEnum.TIER_LIMIT_EXCEEDED, 'unit');
@@ -83,10 +92,10 @@ export class TierRestrictionsValidateUsecase {
 
       const maxThrottleMs = await this.getMaxThrottleInMs(command, organization);
 
-      const windowIssue = buildIssue(throttleDurationMs, maxThrottleMs, ErrorEnum.TIER_LIMIT_EXCEEDED, 'window');
+      const amountIssue = buildIssue(throttleDurationMs, maxThrottleMs, ErrorEnum.TIER_LIMIT_EXCEEDED, 'amount');
       const unitIssue = buildIssue(throttleDurationMs, maxThrottleMs, ErrorEnum.TIER_LIMIT_EXCEEDED, 'unit');
 
-      return [windowIssue, unitIssue].filter(Boolean);
+      return [amountIssue, unitIssue].filter(Boolean);
     }
 
     return [];
@@ -262,5 +271,10 @@ function calculateThrottleDuration(command: TierRestrictionsValidateCommand): nu
     return null;
   }
 
-  return calculateMilliseconds(command.amount, command.unit);
+  const digestUnit = castUnitToDigestUnitEnum(command.unit);
+  if (!digestUnit) {
+    return null;
+  }
+
+  return calculateMilliseconds(command.amount, digestUnit);
 }

@@ -124,7 +124,7 @@ export interface IDelayScheduledMetadata {
 }
 
 export interface IThrottleMetadata {
-  window: number;
+  amount: number;
   unit: DigestUnitEnum;
   threshold?: number;
   throttleKey?: string;

@@ -54,8 +54,8 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
-            window: 5,
-            unit: 'seconds',
+            amount: 1,
+            unit: 'minutes',
             threshold: 3,
           },
         },
@@ -120,8 +120,8 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
-            window: 5,
-            unit: 'seconds',
+            amount: 1,
+            unit: 'minutes',
             threshold: 2,
           },
         },
@@ -197,8 +197,8 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
-            window: 10,
-            unit: 'seconds',
+            amount: 1,
+            unit: 'minutes',
             threshold: 1,
           },
         },
@@ -278,8 +278,8 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
-            window: 5,
-            unit: 'seconds',
+            amount: 1,
+            unit: 'minutes',
             threshold: 1,
             throttleKey: 'userId',
           },
@@ -344,7 +344,7 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
     expect(user2Messages?.length).to.equal(1);
   });
 
-  it('should throttle with different time units', async () => {
+  it('should throttle with minute time units', async () => {
     const workflowBody: CreateWorkflowDto = {
       name: 'Test Throttle Minutes Workflow',
       workflowId: 'test-throttle-minutes-workflow',
@@ -354,7 +354,7 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
-            window: 1,
+            amount: 1,
             unit: 'minutes',
             threshold: 2,
           },
@@ -425,8 +425,8 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
           type: StepTypeEnum.THROTTLE,
           name: 'Throttle Step',
           controlValues: {
-            window: 5,
-            unit: 'seconds',
+            amount: 1,
+            unit: 'minutes',
             threshold: 1,
           },
         },

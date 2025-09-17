@@ -132,7 +132,7 @@ export class BuildStepIssuesUsecase {
   ): Promise<StepIssuesDto> {
     const restrictionsErrors = await this.tierRestrictionsValidateUsecase.execute(
       TierRestrictionsValidateCommand.create({
-        amount: (controlValues?.amount as number | undefined) || (controlValues?.window as number | undefined),
+        amount: controlValues?.amount as number | undefined,
         unit: controlValues?.unit as string | undefined,
         cron: controlValues?.cron as string | undefined,
         organizationId: user.organizationId,

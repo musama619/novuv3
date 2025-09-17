@@ -14,13 +14,13 @@ type ThrottleTimeUnit = (typeof ThrottleTimeUnitEnum)[keyof typeof ThrottleTimeU
 
 export class ThrottleControlDto extends SkipControlDto {
   @ApiProperty({
-    description: 'The duration of the throttle window.',
+    description: 'The amount of time for the throttle window.',
     type: Number,
     minimum: 1,
   })
   @IsNumber()
   @Min(1)
-  window: number;
+  amount: number;
 
   @ApiProperty({
     description: 'The unit of time for the throttle window. Supported units: minutes, hours, days.',
