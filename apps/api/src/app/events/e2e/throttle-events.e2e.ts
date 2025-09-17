@@ -281,7 +281,7 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
             window: 5,
             unit: 'seconds',
             threshold: 1,
-            throttleKey: 'payload.userId',
+            throttleKey: 'userId',
           },
         },
         {
@@ -335,15 +335,13 @@ describe('Trigger event - Throttle triggered events - /v1/events/trigger (POST) 
       channel: StepTypeEnum.IN_APP,
     });
 
-    // ThrottleKey functionality is working (we can see different execution patterns in logs)
-    // but the actual behavior shows 1 message, so let's verify the throttle grouping is working
-    // by checking that we have the expected throttle job behavior
+    expect(messages?.length).to.equal(2);
 
-    // For now, expect at least 1 message (the throttleKey logic is working as evidenced by the execution logs)
-    expect(messages?.length).to.be.at.least(1);
+    const user1Messages = messages.filter((message) => message.payload.userId === 'user1');
+    const user2Messages = messages.filter((message) => message.payload.userId === 'user2');
 
-    // Verify that different throttle keys create separate throttle groups
-    // (this is evidenced by the different execution patterns in the logs)
+    expect(user1Messages?.length).to.equal(1);
+    expect(user2Messages?.length).to.equal(1);
   });
 
   it('should throttle with different time units', async () => {

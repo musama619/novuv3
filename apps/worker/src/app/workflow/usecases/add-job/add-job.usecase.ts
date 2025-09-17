@@ -529,7 +529,6 @@ export class AddJob {
       throw new Error('Step ID is required for throttle reservation');
     }
 
-    // Extract throttle value from payload if throttleKey is provided (similar to digestKey logic)
     const throttleValue = throttleKey ? getNestedValue(job.payload, throttleKey as string) : undefined;
 
     const jobId = `${job._notificationId}:${job.step.stepId}`;
