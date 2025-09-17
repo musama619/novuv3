@@ -35,7 +35,6 @@ import {
   DigestTypeEnum,
   ExecutionDetailsSourceEnum,
   ExecutionDetailsStatusEnum,
-  FeatureFlagsKeysEnum,
   IDigestBaseMetadata,
   IDigestRegularMetadata,
   IDigestTimedMetadata,
@@ -88,8 +87,7 @@ export class AddJob {
     private executeBridgeJob: ExecuteBridgeJob,
     private stepRunRepository: StepRunRepository,
     private subscriberRepository: SubscriberRepository,
-    private redisThrottleService: RedisThrottleService,
-    private featureFlagsService: FeatureFlagsService
+    private redisThrottleService: RedisThrottleService
   ) {}
 
   @InstrumentUsecase()
