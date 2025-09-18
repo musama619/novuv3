@@ -906,6 +906,7 @@ export class AddJob {
           status: ExecutionDetailsStatusEnum.FAILED,
           isTest: false,
           isRetry: false,
+          raw: JSON.stringify({ errorMessage }),
         })
       );
 
