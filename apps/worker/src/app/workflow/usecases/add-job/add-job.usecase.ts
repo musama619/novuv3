@@ -555,10 +555,19 @@ export class AddJob {
 
     const throttleValue = throttleKey ? getNestedValue(job.payload, throttleKey as string) : undefined;
 
+    // For dynamic throttles, use the dynamic value (timestamp) as the throttle identifier
+    // For fixed throttles, use the throttleKey value if provided
+    let effectiveThrottleValue: string | undefined;
+    if (type === 'dynamic' && windowIdentifier) {
+      effectiveThrottleValue = windowIdentifier.split(':')[1]; // Extract the identifier from dynamic value
+    } else {
+      effectiveThrottleValue = throttleValue ? String(throttleValue) : undefined;
+    }
+
     // For throttling, use a consistent identifier based on subscriber and step
     // rather than the unique notification ID, so multiple triggers can be throttled together
-    const throttleJobId = throttleValue
-      ? `${job._subscriberId}:${job.step.stepId}:${throttleValue}`
+    const throttleJobId = effectiveThrottleValue
+      ? `${job._subscriberId}:${job.step.stepId}:${effectiveThrottleValue}`
       : `${job._subscriberId}:${job.step.stepId}`;
 
     const reservationResult = await this.redisThrottleService.reserveThrottleSlot({
@@ -571,8 +580,7 @@ export class AddJob {
       limit: threshold as number,
       nowMs,
       throttleKey: throttleKey as string,
-      throttleValue: throttleValue ? String(throttleValue) : undefined,
-      throttleType: type as 'fixed' | 'dynamic',
+      throttleValue: effectiveThrottleValue,
     });
 
     Logger.debug(

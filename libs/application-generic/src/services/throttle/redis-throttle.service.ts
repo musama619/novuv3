@@ -75,23 +75,17 @@ export class RedisThrottleService {
     subscriberId: string;
     workflowId: string;
     stepId: string;
-    windowStartMs: number;
     throttleKey?: string;
     throttleValue?: string;
   }): string {
     const baseKey = `throttle:${params.environmentId}:${params.subscriberId}:${params.workflowId}:${params.stepId}`;
     const throttleKeyPart =
       params.throttleKey && params.throttleValue ? `:${params.throttleKey}:${params.throttleValue}` : '';
-    return `${baseKey}${throttleKeyPart}:${params.windowStartMs}:set`;
+    return `${baseKey}${throttleKeyPart}:set`;
   }
 
-  private computeWindowStart(nowMs: number, windowMs: number): number {
-    return Math.floor(nowMs / windowMs) * windowMs;
-  }
-
-  private computeTtlSeconds(windowStartMs: number, windowMs: number, nowMs: number): number {
-    const expiryMs = windowStartMs + windowMs + this.ttlBufferMs;
-    return Math.ceil((expiryMs - nowMs) / 1000);
+  private computeTtlSeconds(windowMs: number): number {
+    return Math.ceil((windowMs + this.ttlBufferMs) / 1000);
   }
 
   private async ensureScriptsLoaded(): Promise<void> {
@@ -156,40 +150,16 @@ export class RedisThrottleService {
   }
 
   async reserveThrottleSlot(params: IThrottleReservationParams): Promise<IThrottleReservationResult> {
-    // For dynamic throttles, we need a consistent window identifier that doesn't change between triggers
-    // Use a combination of subscriber, step, and throttle value as the window identifier
-    // For fixed throttles, align to regular intervals (e.g., every hour on the hour)
-    let windowStartMs: number;
-
-    if (params.throttleType === 'dynamic') {
-      // For dynamic throttles, use the dynamic value itself as the window identifier
-      // This ensures all triggers with the same dynamic value share the same throttle window
-      const dynamicValue = params.throttleValue || 'default';
-      // Use a simple hash of the dynamic value to create a consistent window start
-      // This ensures the same dynamic value always maps to the same window
-      let hash = 0;
-      for (let i = 0; i < dynamicValue.length; i++) {
-        hash = (hash << 5) - hash + dynamicValue.charCodeAt(i);
-        hash = hash & hash; // Convert to 32-bit integer
-      }
-      // Use hash as offset from a base time to ensure positive TTL
-      const baseTime = Math.floor(params.nowMs / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000); // Start of today
-      windowStartMs = baseTime + (Math.abs(hash) % (24 * 60 * 60 * 1000)); // Hash within today
-    } else {
-      windowStartMs = this.computeWindowStart(params.nowMs, params.windowMs);
-    }
-
     const setKey = this.buildSetKey({
       environmentId: params.environmentId,
       subscriberId: params.subscriberId,
       workflowId: params.workflowId,
       stepId: params.stepId,
-      windowStartMs,
       throttleKey: params.throttleKey,
       throttleValue: params.throttleValue,
     });
 
-    const ttlSec = this.computeTtlSeconds(windowStartMs, params.windowMs, params.nowMs);
+    const ttlSec = this.computeTtlSeconds(params.windowMs);
 
     try {
       const [granted, count, ttlSecRemaining] = await this.executeReserveScript(
@@ -203,13 +173,12 @@ export class RedisThrottleService {
         granted: granted === 1,
         count,
         ttlMs: ttlSecRemaining > 0 ? ttlSecRemaining * 1000 : 0,
-        windowStartMs,
+        windowStartMs: params.nowMs, // For sliding windows, window starts when first request arrives
       };
 
       Logger.debug(
         {
           ...params,
-          windowStartMs,
           setKey,
           result,
         },
@@ -223,7 +192,6 @@ export class RedisThrottleService {
         {
           error,
           params,
-          windowStartMs,
           setKey,
         },
         'Failed to reserve throttle slot',
