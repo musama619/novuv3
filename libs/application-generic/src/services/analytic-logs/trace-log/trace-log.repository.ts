@@ -298,6 +298,8 @@ export function mapEventTypeToTitle(eventType: EventType): string {
     // Throttle events
     case 'throttle_limit_exceeded':
       return 'Throttle limit exceeded';
+    case 'throttle_window_in_past':
+      return 'Throttle window in past';
 
     // Provider events
     case 'provider_error':

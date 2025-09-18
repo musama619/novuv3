@@ -113,6 +113,7 @@ export type EventType =
   | 'delay_limit_exceeded'
   | 'step_throttled'
   | 'throttle_limit_exceeded'
+  | 'throttle_window_in_past'
   | 'bridge_response_received'
   | 'bridge_execution_failed'
   | 'bridge_execution_skipped'

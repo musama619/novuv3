@@ -195,18 +195,47 @@ export class AddJob {
     }
 
     if (job.type === StepTypeEnum.THROTTLE) {
-      const throttleResult = await this.handleThrottle(command, job, bridgeResponse);
+      try {
+        const throttleResult = await this.handleThrottle(command, job, bridgeResponse);
 
-      if (throttleResult.shouldSkip) {
-        await this.handleThrottleSkip(
-          command,
-          job,
-          throttleResult as { shouldSkip: boolean; executionCount: number; threshold: number; throttledUntil: string }
+        if (throttleResult.shouldSkip) {
+          await this.handleThrottleSkip(
+            command,
+            job,
+            throttleResult as { shouldSkip: boolean; executionCount: number; threshold: number; throttledUntil: string }
+          );
+
+          return {
+            workflowStatus: WorkflowRunStatusEnum.COMPLETED,
+            deliveryLifecycleStatus: DeliveryLifecycleStatus.SKIPPED,
+          };
+        }
+      } catch (error) {
+        Logger.error(`Throttle validation failed for job ${job._id}: ${error.message}`, LOG_CONTEXT);
+
+        // Update job status to failed
+        await this.jobRepository.updateOne(
+          { _id: job._id, _environmentId: command.environmentId },
+          {
+            $set: {
+              status: JobStatusEnum.FAILED,
+              error: {
+                message: error.message,
+                name: error.name,
+                stack: error.stack,
+              },
+            },
+          }
         );
 
+        // Create step run record
+        await this.stepRunRepository.create(job, {
+          status: JobStatusEnum.FAILED,
+        });
+
         return {
-          workflowStatus: WorkflowRunStatusEnum.COMPLETED,
-          deliveryLifecycleStatus: DeliveryLifecycleStatus.SKIPPED,
+          workflowStatus: WorkflowRunStatusEnum.ERROR,
+          deliveryLifecycleStatus: DeliveryLifecycleStatus.ERRORED,
         };
       }
     }
@@ -546,6 +575,9 @@ export class AddJob {
 
     const nowMs = Date.now();
 
+    // Validate throttle window duration
+    await this.validateThrottleWindow(command, job, windowMs, type);
+
     if (!job.step.stepId) {
       throw new Error('Step ID is required for throttle reservation');
     }
@@ -611,15 +643,10 @@ export class AddJob {
       return null;
     }
 
-    // Handle ISO-8601 timestamp (future datetime)
+    // Handle ISO-8601 timestamp
     if (typeof value === 'string' && this.isISO8601(value)) {
       const targetTime = new Date(value).getTime();
       const now = Date.now();
-
-      if (targetTime <= now) {
-        Logger.warn(`Dynamic throttle timestamp '${value}' is in the past`, LOG_CONTEXT);
-        return null;
-      }
 
       return {
         windowMs: targetTime - now,
@@ -827,6 +854,63 @@ export class AddJob {
         return child.on === onFilter;
       });
     });
+  }
+
+  private async validateThrottleWindow(
+    command: AddJobCommand,
+    job: JobEntity,
+    windowMs: number,
+    throttleType: string
+  ): Promise<void> {
+    // For dynamic throttles, validate that the window is in the future
+    if (throttleType === 'dynamic' && windowMs <= 0) {
+      Logger.error(
+        `Dynamic throttle window must be in the future. windowMs: ${windowMs}, jobId: ${job._id}`,
+        LOG_CONTEXT
+      );
+
+      await this.createExecutionDetails.execute(
+        CreateExecutionDetailsCommand.create({
+          ...CreateExecutionDetailsCommand.getDetailsFromJob(job),
+          detail: DetailEnum.THROTTLE_WINDOW_IN_PAST,
+          source: ExecutionDetailsSourceEnum.INTERNAL,
+          status: ExecutionDetailsStatusEnum.FAILED,
+          isTest: false,
+          isRetry: false,
+        })
+      );
+
+      throw new Error(`Dynamic throttle window must be in the future. windowMs: ${windowMs}`);
+    }
+
+    // Validate against tier restrictions
+    const tierValidationErrors = await this.tierRestrictionsValidateUsecase.execute(
+      TierRestrictionsValidateCommand.create({
+        organizationId: command.organizationId,
+        environmentId: command.environmentId,
+        stepType: StepTypeEnum.THROTTLE,
+        amount: Math.floor(windowMs / 1000 / 60), // Convert to minutes for validation
+        unit: 'minutes',
+      })
+    );
+
+    if (tierValidationErrors && tierValidationErrors.length > 0) {
+      const errorMessage = tierValidationErrors[0].message;
+      Logger.error(`Throttle window exceeds tier limits: ${errorMessage}, jobId: ${job._id}`, LOG_CONTEXT);
+
+      await this.createExecutionDetails.execute(
+        CreateExecutionDetailsCommand.create({
+          ...CreateExecutionDetailsCommand.getDetailsFromJob(job),
+          detail: DetailEnum.DEFER_DURATION_LIMIT_EXCEEDED,
+          source: ExecutionDetailsSourceEnum.INTERNAL,
+          status: ExecutionDetailsStatusEnum.FAILED,
+          isTest: false,
+          isRetry: false,
+        })
+      );
+
+      throw new Error(`Throttle window exceeds tier limits: ${errorMessage}`);
+    }
   }
 }
 
