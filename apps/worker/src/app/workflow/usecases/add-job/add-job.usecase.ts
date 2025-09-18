@@ -516,7 +516,6 @@ export class AddJob {
     const { type = 'fixed', threshold = 1, throttleKey } = throttleConfig;
 
     let windowMs: number;
-    let windowIdentifier: string;
 
     if (type === 'fixed') {
       const { amount, unit } = throttleConfig;
@@ -525,7 +524,6 @@ export class AddJob {
         return { shouldSkip: false };
       }
       windowMs = this.convertToMilliseconds(amount as number, unit as string);
-      windowIdentifier = `fixed:${amount}:${unit}`;
     } else if (type === 'dynamic') {
       const { dynamicKey } = throttleConfig;
       if (!dynamicKey) {
@@ -541,7 +539,6 @@ export class AddJob {
       }
 
       windowMs = dynamicValue.windowMs;
-      windowIdentifier = `dynamic:${dynamicValue.identifier}`;
     } else {
       Logger.warn(`Unknown throttle type '${type}' for job ${job._id}`, LOG_CONTEXT);
       return { shouldSkip: false };
@@ -553,22 +550,11 @@ export class AddJob {
       throw new Error('Step ID is required for throttle reservation');
     }
 
-    const throttleValue = throttleKey ? getNestedValue(job.payload, throttleKey as string) : undefined;
-
-    // For dynamic throttles, use the dynamic value (timestamp) as the throttle identifier
-    // For fixed throttles, use the throttleKey value if provided
-    let effectiveThrottleValue: string | undefined;
-    if (type === 'dynamic' && windowIdentifier) {
-      effectiveThrottleValue = windowIdentifier.split(':')[1]; // Extract the identifier from dynamic value
-    } else {
-      effectiveThrottleValue = throttleValue ? String(throttleValue) : undefined;
-    }
+    const throttleValue = throttleKey ? getNestedValue(job.payload, throttleKey as string) : 'no-throttle-key';
 
     // For throttling, use a consistent identifier based on subscriber and step
     // rather than the unique notification ID, so multiple triggers can be throttled together
-    const throttleJobId = effectiveThrottleValue
-      ? `${job._subscriberId}:${job.step.stepId}:${effectiveThrottleValue}`
-      : `${job._subscriberId}:${job.step.stepId}`;
+    const throttleJobId = `${job._templateId}:${job._subscriberId}:${job.step.stepId}:${throttleValue}`;
 
     const reservationResult = await this.redisThrottleService.reserveThrottleSlot({
       environmentId: command.environmentId,
@@ -580,7 +566,7 @@ export class AddJob {
       limit: threshold as number,
       nowMs,
       throttleKey: throttleKey as string,
-      throttleValue: effectiveThrottleValue,
+      throttleValue: throttleValue,
     });
 
     Logger.debug(
@@ -589,7 +575,6 @@ export class AddJob {
         reservationResult,
         threshold,
         windowMs,
-        windowIdentifier,
         type,
       },
       'Redis throttle reservation result',
