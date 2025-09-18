@@ -201,7 +201,7 @@ export class AddJob {
         await this.handleThrottleSkip(
           command,
           job,
-          throttleResult as { shouldSkip: boolean; executionCount: number; threshold: number; windowStart: string }
+          throttleResult as { shouldSkip: boolean; executionCount: number; threshold: number; throttledUntil: string }
         );
 
         return {
@@ -510,7 +510,7 @@ export class AddJob {
     command: AddJobCommand,
     job: JobEntity,
     bridgeResponse: ExecuteOutput | null
-  ): Promise<{ shouldSkip: boolean; executionCount?: number; threshold?: number; windowStart?: string }> {
+  ): Promise<{ shouldSkip: boolean; executionCount?: number; threshold?: number; throttledUntil?: string }> {
     // Get throttle configuration from bridge response or job step
     const throttleConfig = bridgeResponse?.outputs || {};
     const { type = 'fixed', threshold = 1, throttleKey } = throttleConfig;
@@ -586,7 +586,7 @@ export class AddJob {
         shouldSkip: true,
         executionCount: reservationResult.count,
         threshold: threshold as number,
-        windowStart: new Date(reservationResult.windowStartMs).toISOString(),
+        throttledUntil: new Date(reservationResult.windowStartMs + windowMs).toISOString(),
       };
     }
 
@@ -595,7 +595,7 @@ export class AddJob {
       shouldSkip: false,
       executionCount: reservationResult.count,
       threshold: threshold as number,
-      windowStart: new Date(reservationResult.windowStartMs).toISOString(),
+      throttledUntil: new Date(reservationResult.windowStartMs + windowMs).toISOString(),
     };
   }
 
@@ -714,7 +714,7 @@ export class AddJob {
   private async handleThrottleSkip(
     command: AddJobCommand,
     job: JobEntity,
-    throttleResult: { shouldSkip: boolean; executionCount: number; threshold: number; windowStart: string }
+    throttleResult: { shouldSkip: boolean; executionCount: number; threshold: number; throttledUntil: string }
   ) {
     Logger.log(
       `Job ${job._id} throttled: ${throttleResult.executionCount} executions exceed threshold ${throttleResult.threshold as number}`,
@@ -730,7 +730,7 @@ export class AddJob {
             throttled: true,
             executionCount: throttleResult.executionCount,
             threshold: throttleResult.threshold as number,
-            windowStart: throttleResult.windowStart,
+            throttledUntil: throttleResult.throttledUntil,
           },
         },
       }
