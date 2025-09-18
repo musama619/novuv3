@@ -19,7 +19,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiExcludeController, ApiTags } from '@nestjs/swagger';
 import { buildOauthRedirectUrl, PinoLogger } from '@novu/application-generic';
-import { MemberEntity, MemberRepository, UserRepository } from '@novu/dal';
+import { MemberEntity, MemberRepository, UserRepository, SubscriberRepository } from '@novu/dal';
 import { PasswordResetFlowEnum, UserSessionData } from '@novu/shared';
 import { ApiCommonResponses } from '../shared/framework/response.decorator';
 import { UserSession } from '../shared/framework/user.decorator';
@@ -41,6 +41,7 @@ import { SwitchOrganizationCommand } from './usecases/switch-organization/switch
 import { SwitchOrganization } from './usecases/switch-organization/switch-organization.usecase';
 import { UpdatePasswordCommand } from './usecases/update-password/update-password.command';
 import { UpdatePassword } from './usecases/update-password/update-password.usecase';
+import { ExternalApiAccessible } from './framework/external-api.decorator';
 
 @ApiCommonResponses()
 @Controller('/auth')
@@ -58,7 +59,8 @@ export class AuthController {
     private passwordResetRequestUsecase: PasswordResetRequest,
     private passwordResetUsecase: PasswordReset,
     private updatePasswordUsecase: UpdatePassword,
-    private logger: PinoLogger
+    private logger: PinoLogger,
+    private subscriberRepository: SubscriberRepository
   ) {
     this.logger.setContext(this.constructor.name);
   }
@@ -187,5 +189,29 @@ export class AuthController {
     const member = organizationId ? await this.memberRepository.findMemberByUserId(organizationId, user._id) : null;
 
     return await this.authService.getSignedToken(user, organizationId, member as MemberEntity);
+  }
+
+  @ExternalApiAccessible()
+  @RequireAuthentication()
+  @Get('/subscriber-token/:subscriberId/:environmentId')
+  async getSubscriberToken(
+    @UserSession() user: UserSessionData,
+    @Param('subscriberId') subscriberId: string,
+    @Param('environmentId') environmentId: string
+  ): Promise<{ token: string }> {
+    if (!user || !user._id) throw new BadRequestException('Invalid user session');
+
+    const subscriber = await this.subscriberRepository.findBySubscriberId(
+      environmentId,
+      subscriberId
+    );
+
+    if (!subscriber) {
+      throw new NotFoundException(`Subscriber with ID ${subscriberId} not found`);
+    }
+
+    const token = await this.authService.getSubscriberWidgetToken(subscriber);
+
+    return { token };
   }
 }
