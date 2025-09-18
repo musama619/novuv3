@@ -22,6 +22,16 @@ export class RedisThrottleService {
     local ttlSec = tonumber(ARGV[2])
     local jobId = ARGV[3]
 
+    -- Manual TTL check: if key exists but has expired, clean it up
+    local currentTtl = redis.call('TTL', setKey)
+    if currentTtl == 0 then
+      -- Key exists but has no TTL (should not happen) or has expired
+      redis.call('DEL', setKey)
+    elseif currentTtl == -1 then
+      -- Key exists but has no expiry set (should not happen with our logic)
+      redis.call('DEL', setKey)
+    end
+
     local count = redis.call('SCARD', setKey)
     if count >= limit then
       local ttl = redis.call('TTL', setKey)
@@ -56,6 +66,19 @@ export class RedisThrottleService {
     -- Returns: {removed (0/1), countAfter, ttlSecRemaining}
     local setKey = KEYS[1]
     local jobId = ARGV[1]
+    
+    -- Manual TTL check: if key exists but has expired, clean it up
+    local currentTtl = redis.call('TTL', setKey)
+    if currentTtl == 0 then
+      -- Key exists but has no TTL (should not happen) or has expired
+      redis.call('DEL', setKey)
+      return {0, 0, 0}
+    elseif currentTtl == -1 then
+      -- Key exists but has no expiry set (should not happen with our logic)
+      redis.call('DEL', setKey)
+      return {0, 0, 0}
+    end
+    
     local removed = redis.call('SREM', setKey, jobId)
     local count = redis.call('SCARD', setKey)
     local ttl = redis.call('TTL', setKey)
