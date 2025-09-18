@@ -40,7 +40,7 @@ services:
       retries: 5
 
   api:
-    image: 'ghcr.io/novuhq/novu/api:2.3.0'
+    image: 'ghcr.io/musama619/novuv3/api:2.3.0'
     depends_on:
       - mongodb
       - redis
